@@ -1,0 +1,17 @@
+.canvas-section {
+  text-align: center;
+  font-size: 0;
+}
+#bg-canvas-wrapper {
+  position: relative;
+  display: inline-block;
+}
+#bg-canvas {
+  max-width: 800px;
+  margin: 0 auto;
+  border: 1px solid black;
+}
+#bg-canvas-wrapper > .sprite {
+  position: absolute;
+  background-color: rgba(248, 248, 77, 0.5);
+}
