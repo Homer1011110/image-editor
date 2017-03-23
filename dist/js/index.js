@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -72,19 +72,19 @@
 
 
 /* styles */
-__webpack_require__(9)
+__webpack_require__(8)
 
-var Component = __webpack_require__(7)(
+var Component = __webpack_require__(6)(
   /* script */
   __webpack_require__(2),
   /* template */
-  __webpack_require__(8),
+  __webpack_require__(7),
   /* scopeId */
   "data-v-3dee5128",
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/ImageEditor.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\ImageEditor.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] ImageEditor.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -110,7 +110,7 @@ module.exports = Component.exports
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(process, global) {/*!
- * Vue.js v2.2.4
+ * Vue.js v2.2.2
  * (c) 2014-2017 Evan You
  * Released under the MIT License.
  */
@@ -388,7 +388,7 @@ var config = {
   /**
    * Whether to record perf
    */
-  performance: false,
+  performance: process.env.NODE_ENV !== 'production',
 
   /**
    * Error handler for watcher errors
@@ -463,48 +463,6 @@ var config = {
    */
   _maxUpdateCount: 100
 };
-
-/*  */
-
-var emptyObject = Object.freeze({});
-
-/**
- * Check if a string starts with $ or _
- */
-function isReserved (str) {
-  var c = (str + '').charCodeAt(0);
-  return c === 0x24 || c === 0x5F
-}
-
-/**
- * Define a property.
- */
-function def (obj, key, val, enumerable) {
-  Object.defineProperty(obj, key, {
-    value: val,
-    enumerable: !!enumerable,
-    writable: true,
-    configurable: true
-  });
-}
-
-/**
- * Parse simple path.
- */
-var bailRE = /[^\w.$]/;
-function parsePath (path) {
-  if (bailRE.test(path)) {
-    return
-  }
-  var segments = path.split('.');
-  return function (obj) {
-    for (var i = 0; i < segments.length; i++) {
-      if (!obj) { return }
-      obj = obj[segments[i]];
-    }
-    return obj
-  }
-}
 
 /*  */
 /* globals MutationObserver */
@@ -655,6 +613,57 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
   }());
 }
 
+var perf;
+
+if (process.env.NODE_ENV !== 'production') {
+  perf = inBrowser && window.performance;
+  if (perf && (!perf.mark || !perf.measure)) {
+    perf = undefined;
+  }
+}
+
+/*  */
+
+var emptyObject = Object.freeze({});
+
+/**
+ * Check if a string starts with $ or _
+ */
+function isReserved (str) {
+  var c = (str + '').charCodeAt(0);
+  return c === 0x24 || c === 0x5F
+}
+
+/**
+ * Define a property.
+ */
+function def (obj, key, val, enumerable) {
+  Object.defineProperty(obj, key, {
+    value: val,
+    enumerable: !!enumerable,
+    writable: true,
+    configurable: true
+  });
+}
+
+/**
+ * Parse simple path.
+ */
+var bailRE = /[^\w.$]/;
+function parsePath (path) {
+  if (bailRE.test(path)) {
+    return
+  }
+  var segments = path.split('.');
+  return function (obj) {
+    for (var i = 0; i < segments.length; i++) {
+      if (!obj) { return }
+      obj = obj[segments[i]];
+    }
+    return obj
+  }
+}
+
 var warn = noop;
 var tip = noop;
 var formatComponentName;
@@ -686,11 +695,9 @@ if (process.env.NODE_ENV !== 'production') {
     if (vm.$root === vm) {
       return '<Root>'
     }
-    var name = typeof vm === 'function' && vm.options
-      ? vm.options.name
-      : vm._isVue
-        ? vm.$options.name || vm.$options._componentTag
-        : vm.name;
+    var name = vm._isVue
+      ? vm.$options.name || vm.$options._componentTag
+      : vm.name;
 
     var file = vm._isVue && vm.$options.__file;
     if (!name && file) {
@@ -1636,29 +1643,6 @@ if (process.env.NODE_ENV !== 'production') {
   };
 }
 
-var mark;
-var measure;
-
-if (process.env.NODE_ENV !== 'production') {
-  var perf = inBrowser && window.performance;
-  /* istanbul ignore if */
-  if (
-    perf &&
-    perf.mark &&
-    perf.measure &&
-    perf.clearMarks &&
-    perf.clearMeasures
-  ) {
-    mark = function (tag) { return perf.mark(tag); };
-    measure = function (name, startTag, endTag) {
-      perf.measure(name, startTag, endTag);
-      perf.clearMarks(startTag);
-      perf.clearMarks(endTag);
-      perf.clearMeasures(name);
-    };
-  }
-}
-
 /*  */
 
 var VNode = function VNode (
@@ -2230,22 +2214,19 @@ function mountComponent (
 
   var updateComponent;
   /* istanbul ignore if */
-  if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+  if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
     updateComponent = function () {
       var name = vm._name;
-      var id = vm._uid;
-      var startTag = "vue-perf-start:" + id;
-      var endTag = "vue-perf-end:" + id;
-
-      mark(startTag);
+      var startTag = "start " + name;
+      var endTag = "end " + name;
+      perf.mark(startTag);
       var vnode = vm._render();
-      mark(endTag);
-      measure((name + " render"), startTag, endTag);
-
-      mark(startTag);
+      perf.mark(endTag);
+      perf.measure((name + " render"), startTag, endTag);
+      perf.mark(startTag);
       vm._update(vnode, hydrating);
-      mark(endTag);
-      measure((name + " patch"), startTag, endTag);
+      perf.mark(endTag);
+      perf.measure((name + " patch"), startTag, endTag);
     };
   } else {
     updateComponent = function () {
@@ -2987,63 +2968,8 @@ function stateMixin (Vue) {
 
 /*  */
 
-// hooks to be invoked on component VNodes during patch
-var componentVNodeHooks = {
-  init: function init (
-    vnode,
-    hydrating,
-    parentElm,
-    refElm
-  ) {
-    if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
-      var child = vnode.componentInstance = createComponentInstanceForVnode(
-        vnode,
-        activeInstance,
-        parentElm,
-        refElm
-      );
-      child.$mount(hydrating ? vnode.elm : undefined, hydrating);
-    } else if (vnode.data.keepAlive) {
-      // kept-alive components, treat as a patch
-      var mountedNode = vnode; // work around flow
-      componentVNodeHooks.prepatch(mountedNode, mountedNode);
-    }
-  },
-
-  prepatch: function prepatch (oldVnode, vnode) {
-    var options = vnode.componentOptions;
-    var child = vnode.componentInstance = oldVnode.componentInstance;
-    updateChildComponent(
-      child,
-      options.propsData, // updated props
-      options.listeners, // updated listeners
-      vnode, // new parent vnode
-      options.children // new children
-    );
-  },
-
-  insert: function insert (vnode) {
-    if (!vnode.componentInstance._isMounted) {
-      vnode.componentInstance._isMounted = true;
-      callHook(vnode.componentInstance, 'mounted');
-    }
-    if (vnode.data.keepAlive) {
-      activateChildComponent(vnode.componentInstance, true /* direct */);
-    }
-  },
-
-  destroy: function destroy (vnode) {
-    if (!vnode.componentInstance._isDestroyed) {
-      if (!vnode.data.keepAlive) {
-        vnode.componentInstance.$destroy();
-      } else {
-        deactivateChildComponent(vnode.componentInstance, true /* direct */);
-      }
-    }
-  }
-};
-
-var hooksToMerge = Object.keys(componentVNodeHooks);
+var hooks = { init: init, prepatch: prepatch, insert: insert, destroy: destroy };
+var hooksToMerge = Object.keys(hooks);
 
 function createComponent (
   Ctor,
@@ -3191,6 +3117,62 @@ function createComponentInstanceForVnode (
   return new vnodeComponentOptions.Ctor(options)
 }
 
+function init (
+  vnode,
+  hydrating,
+  parentElm,
+  refElm
+) {
+  if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
+    var child = vnode.componentInstance = createComponentInstanceForVnode(
+      vnode,
+      activeInstance,
+      parentElm,
+      refElm
+    );
+    child.$mount(hydrating ? vnode.elm : undefined, hydrating);
+  } else if (vnode.data.keepAlive) {
+    // kept-alive components, treat as a patch
+    var mountedNode = vnode; // work around flow
+    prepatch(mountedNode, mountedNode);
+  }
+}
+
+function prepatch (
+  oldVnode,
+  vnode
+) {
+  var options = vnode.componentOptions;
+  var child = vnode.componentInstance = oldVnode.componentInstance;
+  updateChildComponent(
+    child,
+    options.propsData, // updated props
+    options.listeners, // updated listeners
+    vnode, // new parent vnode
+    options.children // new children
+  );
+}
+
+function insert (vnode) {
+  if (!vnode.componentInstance._isMounted) {
+    vnode.componentInstance._isMounted = true;
+    callHook(vnode.componentInstance, 'mounted');
+  }
+  if (vnode.data.keepAlive) {
+    activateChildComponent(vnode.componentInstance, true /* direct */);
+  }
+}
+
+function destroy (vnode) {
+  if (!vnode.componentInstance._isDestroyed) {
+    if (!vnode.data.keepAlive) {
+      vnode.componentInstance.$destroy();
+    } else {
+      deactivateChildComponent(vnode.componentInstance, true /* direct */);
+    }
+  }
+}
+
 function resolveAsyncComponent (
   factory,
   baseCtor,
@@ -3254,21 +3236,6 @@ function extractProps (data, Ctor) {
   if (attrs || props || domProps) {
     for (var key in propOptions) {
       var altKey = hyphenate(key);
-      if (process.env.NODE_ENV !== 'production') {
-        var keyInLowerCase = key.toLowerCase();
-        if (
-          key !== keyInLowerCase &&
-          attrs && attrs.hasOwnProperty(keyInLowerCase)
-        ) {
-          warn(
-            "Prop \"" + keyInLowerCase + "\" is not declared in component " +
-            (formatComponentName(Ctor)) + ". Note that HTML attributes are " +
-            "case-insensitive and camelCased props need to use their kebab-case " +
-            "equivalents when using in-DOM templates. You should probably use " +
-            "\"" + altKey + "\" instead of \"" + key + "\"."
-          );
-        }
-      }
       checkProp(res, props, key, altKey, true) ||
       checkProp(res, attrs, key, altKey) ||
       checkProp(res, domProps, key, altKey);
@@ -3309,7 +3276,7 @@ function mergeHooks (data) {
   for (var i = 0; i < hooksToMerge.length; i++) {
     var key = hooksToMerge[i];
     var fromParent = data.hook[key];
-    var ours = componentVNodeHooks[key];
+    var ours = hooks[key];
     data.hook[key] = fromParent ? mergeHook$1(ours, fromParent) : ours;
   }
 }
@@ -3551,17 +3518,14 @@ function bindObjectProps (
       if (Array.isArray(value)) {
         value = toObject(value);
       }
-      var hash;
       for (var key in value) {
         if (key === 'class' || key === 'style') {
-          hash = data;
+          data[key] = value[key];
         } else {
           var type = data.attrs && data.attrs.type;
-          hash = asProp || config.mustUseProp(tag, type, key)
+          var hash = asProp || config.mustUseProp(tag, type, key)
             ? data.domProps || (data.domProps = {})
             : data.attrs || (data.attrs = {});
-        }
-        if (!(key in hash)) {
           hash[key] = value[key];
         }
       }
@@ -3773,8 +3737,8 @@ var uid = 0;
 function initMixin (Vue) {
   Vue.prototype._init = function (options) {
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      mark('vue-perf-init');
+    if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+      perf.mark('init');
     }
 
     var vm = this;
@@ -3813,10 +3777,10 @@ function initMixin (Vue) {
     callHook(vm, 'created');
 
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+    if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
       vm._name = formatComponentName(vm, false);
-      mark('vue-perf-init-end');
-      measure(((vm._name) + " init"), 'vue-perf-init', 'vue-perf-init-end');
+      perf.mark('init end');
+      perf.measure(((vm._name) + " init"), 'init', 'init end');
     }
 
     if (vm.$options.el) {
@@ -4228,7 +4192,7 @@ Object.defineProperty(Vue$3.prototype, '$isServer', {
   get: isServerRendering
 });
 
-Vue$3.version = '2.2.4';
+Vue$3.version = '2.2.2';
 
 /*  */
 
@@ -4566,7 +4530,7 @@ function registerRef (vnode, isRemoval) {
 
 var emptyNode = new VNode('', {}, []);
 
-var hooks = ['create', 'activate', 'update', 'remove', 'destroy'];
+var hooks$1 = ['create', 'activate', 'update', 'remove', 'destroy'];
 
 function isUndef (s) {
   return s == null
@@ -4602,10 +4566,10 @@ function createPatchFunction (backend) {
   var modules = backend.modules;
   var nodeOps = backend.nodeOps;
 
-  for (i = 0; i < hooks.length; ++i) {
-    cbs[hooks[i]] = [];
+  for (i = 0; i < hooks$1.length; ++i) {
+    cbs[hooks$1[i]] = [];
     for (j = 0; j < modules.length; ++j) {
-      if (modules[j][hooks[i]] !== undefined) { cbs[hooks[i]].push(modules[j][hooks[i]]); }
+      if (modules[j][hooks$1[i]] !== undefined) { cbs[hooks$1[i]].push(modules[j][hooks$1[i]]); }
     }
   }
 
@@ -7406,7 +7370,7 @@ var IS_REGEX_CAPTURING_BROKEN = false;
 });
 
 // Special Elements (can contain anything)
-var isPlainTextElement = makeMap('script,style,textarea', true);
+var isScriptOrStyle = makeMap('script,style', true);
 var reCache = {};
 
 var decodingMap = {
@@ -7432,8 +7396,8 @@ function parseHTML (html, options) {
   var last, lastTag;
   while (html) {
     last = html;
-    // Make sure we're not in a plaintext content element like script/style
-    if (!lastTag || !isPlainTextElement(lastTag)) {
+    // Make sure we're not in a script or style element
+    if (!lastTag || !isScriptOrStyle(lastTag)) {
       var textEnd = html.indexOf('<');
       if (textEnd === 0) {
         // Comment:
@@ -7513,7 +7477,7 @@ function parseHTML (html, options) {
       var endTagLength = 0;
       var rest = html.replace(reStackedTag, function (all, text, endTag) {
         endTagLength = endTag.length;
-        if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
+        if (stackedTag !== 'script' && stackedTag !== 'style' && stackedTag !== 'noscript') {
           text = text
             .replace(/<!--([\s\S]*?)-->/g, '$1')
             .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1');
@@ -7708,26 +7672,25 @@ function parseText (
 
 /*  */
 
-var onRE = /^@|^v-on:/;
 var dirRE = /^v-|^@|^:/;
+var onRE = /^@|^v-on:/;
 var forAliasRE = /(.*?)\s+(?:in|of)\s+(.*)/;
 var forIteratorRE = /\((\{[^}]*\}|[^,]*),([^,]*)(?:,([^,]*))?\)/;
-
-var argRE = /:(.*)$/;
 var bindRE = /^:|^v-bind:/;
+var argRE = /:(.*)$/;
 var modifierRE = /\.[^.]+/g;
 
 var decodeHTMLCached = cached(decode);
 
 // configurable state
 var warn$2;
-var delimiters;
-var transforms;
-var preTransforms;
-var postTransforms;
-var platformIsPreTag;
-var platformMustUseProp;
 var platformGetTagNamespace;
+var platformMustUseProp;
+var platformIsPreTag;
+var preTransforms;
+var transforms;
+var postTransforms;
+var delimiters;
 
 /**
  * Convert HTML string to AST.
@@ -7752,13 +7715,6 @@ function parse (
   var inVPre = false;
   var inPre = false;
   var warned = false;
-
-  function warnOnce (msg) {
-    if (!warned) {
-      warned = true;
-      warn$2(msg);
-    }
-  }
 
   function endPre (element) {
     // check pre state
@@ -7843,15 +7799,17 @@ function parse (
       }
 
       function checkRootConstraints (el) {
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env.NODE_ENV !== 'production' && !warned) {
           if (el.tag === 'slot' || el.tag === 'template') {
-            warnOnce(
+            warned = true;
+            warn$2(
               "Cannot use <" + (el.tag) + "> as component root element because it may " +
               'contain multiple nodes.'
             );
           }
           if (el.attrsMap.hasOwnProperty('v-for')) {
-            warnOnce(
+            warned = true;
+            warn$2(
               'Cannot use v-for on stateful component root element because ' +
               'it renders multiple elements.'
             );
@@ -7871,8 +7829,9 @@ function parse (
             exp: element.elseif,
             block: element
           });
-        } else if (process.env.NODE_ENV !== 'production') {
-          warnOnce(
+        } else if (process.env.NODE_ENV !== 'production' && !warned) {
+          warned = true;
+          warn$2(
             "Component template should contain exactly one root element. " +
             "If you are using v-if on multiple elements, " +
             "use v-else-if to chain them instead."
@@ -7917,16 +7876,11 @@ function parse (
 
     chars: function chars (text) {
       if (!currentParent) {
-        if (process.env.NODE_ENV !== 'production') {
-          if (text === template) {
-            warnOnce(
-              'Component template requires a root element, rather than just text.'
-            );
-          } else if ((text = text.trim())) {
-            warnOnce(
-              ("text \"" + text + "\" outside root element will be ignored.")
-            );
-          }
+        if (process.env.NODE_ENV !== 'production' && !warned && text === template) {
+          warned = true;
+          warn$2(
+            'Component template requires a root element, rather than just text.'
+          );
         }
         return
       }
@@ -8125,7 +8079,7 @@ function processComponent (el) {
 
 function processAttrs (el) {
   var list = el.attrsList;
-  var i, l, name, rawName, value, modifiers, isProp;
+  var i, l, name, rawName, value, arg, modifiers, isProp;
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name;
     value = list[i].value;
@@ -8163,8 +8117,7 @@ function processAttrs (el) {
         name = name.replace(dirRE, '');
         // parse arg
         var argMatch = name.match(argRE);
-        var arg = argMatch && argMatch[1];
-        if (arg) {
+        if (argMatch && (arg = argMatch[1])) {
           name = name.slice(0, -(arg.length + 1));
         }
         addDirective(el, name, rawName, value, arg, modifiers);
@@ -8450,11 +8403,10 @@ function genHandler (
       : ("function($event){" + (handler.value) + "}") // inline statement
   } else {
     var code = '';
-    var genModifierCode = '';
     var keys = [];
     for (var key in handler.modifiers) {
       if (modifierCode[key]) {
-        genModifierCode += modifierCode[key];
+        code += modifierCode[key];
         // left/right
         if (keyCodes[key]) {
           keys.push(key);
@@ -8465,10 +8417,6 @@ function genHandler (
     }
     if (keys.length) {
       code += genKeyFilter(keys);
-    }
-    // Make sure modifiers like prevent and stop get executed after key filtering
-    if (genModifierCode) {
-      code += genModifierCode;
     }
     var handlerCode = isMethodPath
       ? handler.value + '($event)'
@@ -9314,8 +9262,8 @@ Vue$3.prototype.$mount = function (
     }
     if (template) {
       /* istanbul ignore if */
-      if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-        mark('compile');
+      if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+        perf.mark('compile');
       }
 
       var ref = compileToFunctions(template, {
@@ -9328,9 +9276,9 @@ Vue$3.prototype.$mount = function (
       options.staticRenderFns = staticRenderFns;
 
       /* istanbul ignore if */
-      if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-        mark('compile end');
-        measure(((this._name) + " compile"), 'compile', 'compile end');
+      if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+        perf.mark('compile end');
+        perf.measure(((this._name) + " compile"), 'compile', 'compile end');
       }
     }
   }
@@ -9355,7 +9303,7 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(12)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5), __webpack_require__(11)))
 
 /***/ }),
 /* 2 */
@@ -9363,6 +9311,19 @@ module.exports = Vue$3;
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Sprite_vue__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Sprite_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__Sprite_vue__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -9379,28 +9340,25 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 
-/* harmony default export */ __webpack_exports__["default"] = ({
+
+/* harmony default export */ __webpack_exports__["default"] = {
   data: function () {
     return {
       isCreatingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-3.jpg",
+      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
-      bgCanvasHeight: 300
+      bgCanvasHeight: 300,
+      bgContext: null,
+      showDragLayer: false,
+      sprites: [],
+      activeSprite: null
     };
   },
-  created: function () {
-    // let self = this
-    // let sampleImg = new Image()
-    // sampleImg.src = this.sampleImgUrl
-    // sampleImg.onload = function() {
-    //   self.isImgLoaded = true
-    //   self.bgCanvasWidth = this.width
-    //   self.bgCanvasHeight = this.height
-    // }
-    console.log("created: ", document.querySelector("#test"));
+  components: {
+    "sprite": __WEBPACK_IMPORTED_MODULE_0__Sprite_vue___default.a
   },
-  mounted: function () {
+  created: function () {
     let self = this;
     let sampleImg = new Image();
     sampleImg.src = this.sampleImgUrl;
@@ -9408,144 +9366,79 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
       self.isImgLoaded = true;
       self.bgCanvasWidth = this.width;
       self.bgCanvasHeight = this.height;
+      setTimeout(function () {
+        self.bgContext = self.$refs.bgCanvas.getContext("2d");
+        self.drawBackground(sampleImg);
+      }, 1);
     };
-    setTimeout(function () {
-      console.log(self.$refs.bgCanvas);
-    }, 5000);
-    console.log("mounted: ", self.$refs.bgCanvas);
+    self.initKeyBoardListeners();
   },
   methods: {
+    initKeyBoardListeners: function (e) {
+      // NOTE: is it suitable to bind keydown/keyup listener here?
+      window.onkeydown = ({ ctrlKey }) => {
+        if (!this.showDragLayer && ctrlKey) {
+          this.showDragLayer = true;
+        }
+      };
+      window.onkeyup = ({ ctrlKey }) => {
+        if (this.showDragLayer && !ctrlKey) {
+          this.showDragLayer = false;
+        }
+      };
+    },
+    mousedown: function ({ offsetX, offsetY, button }) {
+      if (button != 0 || !this.showDragLayer) {
+        return;
+      }
+      let sprite = {
+        startX: offsetX,
+        startY: offsetY,
+        offsetX: offsetX,
+        offsetY: offsetY
+      };
+      this.sprites.push(sprite);
+      this.activeSprite = sprite;
+    },
+    mousemove: function ({ offsetX, offsetY, button }) {
+      if (button != 0 || !this.showDragLayer) {
+        return;
+      }
+      if (!this.activeSprite) {
+        console.warn(`this.activeSprite is ${this.activeSprite}`);
+        return;
+      }
+      this.activeSprite.offsetX = offsetX;
+      this.activeSprite.offsetY = offsetY;
+    },
+    mouseup: function ({ offsetX, offsetY, button }) {
+      if (button != 0 || !this.showDragLayer) {
+        return;
+      }
+      this.activeSprite = null;
+    },
     drawBackground: function (img) {
-      console.log(this.$refs, this.$refs["bgCanvas"]);
-      console.log(this.$refs.bgCanvas);
+      this.bgContext.drawImage(img, 0, 0);
     }
   }
-});
+};
 
 /***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-
-
-var _ImageEditor = __webpack_require__(0);
-
-var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
-
-var _vue = __webpack_require__(1);
-
-var _vue2 = _interopRequireDefault(_vue);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var app = new _vue2.default({
-  el: "#ie-container",
-  data: {},
-  components: {
-    "image-editor": _ImageEditor2.default
-  }
-});
-
-// print rect
-// ctx.lineWidth = 10
-// ctx.lineCap = "butt | round | square"
-// ctx.lineJoin=  "round | bevel | miter"
-// let bgImg = document.querySelector("#bg-img")
-// bgImg.onload = function(e) {
-//   let imgData = document.querySelector("#img-data")
-//   imgData.innerHTML = `width: ${this.width}<br/>height: ${this.height}`
-//   // NOTE: canvas's content will be clear when you reset the width or height attribute
-//   bgCanvas.width = this.width
-//   bgCanvas.height = this.height
-//   bgContext.drawImage(bgImg, 0, 0)
-//   bgCanvas.style.display = "block"
-// }
-// // NOTE: this operation will draw the whole image and may stretch the image
-// // bgContext.drawImage(bgImg, 0, 0, 200, 300)
-// let isCreatingSprite = false
-// let startX, startY
-// let sprite
-// let paintCount = 0
-// bgCanvasWrapper.onmousedown = function({offsetX, offsetY, button}) {
-//   if(button !== 0 || !ctrlDown) {
-//     return
-//   }
-//   isCreatingSprite = true
-//   startX = offsetX
-//   startY = offsetY
-//   sprite = document.createElement("div")
-//   sprite.setAttribute("class", "sprite")
-//   bgCanvasWrapper.append(sprite)
-// }
-// bgCanvasWrapper.onmousemove = function({offsetX, offsetY, button}) {
-//   if(button !== 0 || !ctrlDown) {
-//     return
-//   }
-//   if(!isCreatingSprite) {
-//     return
-//   }
-//   let width = offsetX - startX
-//   let height = offsetY - startY
-//   let x = 0
-//   let y = 0
-//   if(width < 0) {
-//     width = -width
-//     x = startX - width
-//   } else {
-//     x = startX
-//   }
-//   if(height < 0) {
-//     height = -height
-//     y = startY - height
-//   } else {
-//     y = startY
-//   }
-//   sprite.style.left = `${x}px`
-//   sprite.style.top = `${y}px`
-//   sprite.style.width = `${width}px`
-//   sprite.style.height = `${height}px`
-// }
-// bgCanvasWrapper.onmouseup = function({offsetX, offsetY, button}) {
-//   if(button !== 0 || !ctrlDown) {
-//     return
-//   }
-//   isCreatingSprite = false
-//   sprite = null
-// }
-//
-// let ctrlDown = false
-// window.onkeydown = function(e) {
-//   // e.preventDefault()
-//   if(!ctrlDown && e.ctrlKey) {
-//     ctrlDown = true
-//     dragLayer.style.display = "block"
-//   }
-// }
-// window.onkeyup = function(e) {
-//   // e.preventDefault()
-//   if(ctrlDown && !e.ctrlKey) {
-//     ctrlDown = false
-//     dragLayer.style.display = "none"
-//   }
-// }
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(5)();
+exports = module.exports = __webpack_require__(4)();
 // imports
 
 
 // module
-exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  text-align: center;\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.bg-canvas-wrapper > .sprite[data-v-3dee5128] {\n  position: absolute;\n  background-color: rgba(248, 248, 77, 0.5);\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: none;\n  z-index: 1\n}\n", ""]);
+exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\r\n  text-align: center;\r\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\r\n  position: relative;\r\n  display: inline-block;\n}\n.bg-canvas[data-v-3dee5128] {\r\n  max-width: 800px;\r\n  min-width: 500px;\r\n  margin: 0 auto;\r\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  left: 0;\r\n  top: 0;\r\n  display: none;\r\n  z-index: 1\n}\r\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports) {
 
 /*
@@ -9601,7 +9494,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -9787,7 +9680,7 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports) {
 
 module.exports = function normalizeComponent (
@@ -9840,21 +9733,20 @@ module.exports = function normalizeComponent (
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
   return _c('section', {
     staticClass: "canvas-section"
   }, [_c('div', {
-    staticClass: "bg-canvas-wrapper"
-  }, [_c('canvas', {
-    directives: [{
-      name: "show",
-      rawName: "v-show",
-      value: (_vm.isImgLoaded),
-      expression: "isImgLoaded"
-    }],
+    staticClass: "bg-canvas-wrapper",
+    on: {
+      "mousedown": _vm.mousedown,
+      "mousemove": _vm.mousemove,
+      "mouseup": _vm.mouseup
+    }
+  }, [(_vm.isImgLoaded) ? _c('canvas', {
     ref: "bgCanvas",
     staticClass: "bg-canvas",
     attrs: {
@@ -9862,15 +9754,24 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       "width": _vm.bgCanvasWidth,
       "height": _vm.bgCanvasHeight
     }
-  }), _vm._v(" "), _c('div', {
+  }) : _vm._e(), _vm._v(" "), _c('div', {
     directives: [{
       name: "show",
       rawName: "v-show",
-      value: (_vm.isCreatingSprite),
-      expression: "isCreatingSprite"
+      value: (_vm.showDragLayer),
+      expression: "showDragLayer"
     }],
     staticClass: "drag-layer"
-  })])])
+  }), _vm._v(" "), _vm._l((_vm.sprites), function(sprite) {
+    return _c('sprite', {
+      attrs: {
+        "offsetX": sprite.offsetX,
+        "offsetY": sprite.offsetY,
+        "startX": sprite.startX,
+        "startY": sprite.startY
+      }
+    })
+  })], 2)])
 },staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {
@@ -9881,17 +9782,17 @@ if (false) {
 }
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(4);
+var content = __webpack_require__(3);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(10)("67ad18db", content, false);
+var update = __webpack_require__(9)("67ad18db", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -9907,7 +9808,7 @@ if(false) {
 }
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -9926,7 +9827,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(11)
+var listToStyles = __webpack_require__(10)
 
 /*
 type StyleObject = {
@@ -10016,6 +9917,27 @@ function addStylesToDom (styles /* Array<StyleObject> */) {
   }
 }
 
+function listToStyles (parentId, list) {
+  var styles = []
+  var newStyles = {}
+  for (var i = 0; i < list.length; i++) {
+    var item = list[i]
+    var id = item[0]
+    var css = item[1]
+    var media = item[2]
+    var sourceMap = item[3]
+    var part = { css: css, media: media, sourceMap: sourceMap }
+    if (!newStyles[id]) {
+      part.id = parentId + ':0'
+      styles.push(newStyles[id] = { id: id, parts: [part] })
+    } else {
+      part.id = parentId + ':' + newStyles[id].parts.length
+      newStyles[id].parts.push(part)
+    }
+  }
+  return styles
+}
+
 function createStyleElement () {
   var styleElement = document.createElement('style')
   styleElement.type = 'text/css'
@@ -10026,20 +9948,12 @@ function createStyleElement () {
 function addStyle (obj /* StyleObjectPart */) {
   var update, remove
   var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
+  var hasSSR = styleElement != null
 
-  if (styleElement) {
-    if (isProduction) {
-      // has SSR styles and in production mode.
-      // simply do nothing.
-      return noop
-    } else {
-      // has SSR styles but in dev mode.
-      // for some reason Chrome can't handle source map in server-rendered
-      // style tags - source maps in <style> only works if the style tag is
-      // created and inserted dynamically. So we remove the server rendered
-      // styles and inject new ones.
-      styleElement.parentNode.removeChild(styleElement)
-    }
+  // if in production mode and style is already provided by SSR,
+  // simply do nothing.
+  if (hasSSR && isProduction) {
+    return noop
   }
 
   if (isOldIE) {
@@ -10050,14 +9964,16 @@ function addStyle (obj /* StyleObjectPart */) {
     remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
   } else {
     // use multi-style-tag mode in all other cases
-    styleElement = createStyleElement()
+    styleElement = styleElement || createStyleElement()
     update = applyToTag.bind(null, styleElement)
     remove = function () {
       styleElement.parentNode.removeChild(styleElement)
     }
   }
 
-  update(obj)
+  if (!hasSSR) {
+    update(obj)
+  }
 
   return function updateStyle (newObj /* StyleObjectPart */) {
     if (newObj) {
@@ -10128,7 +10044,7 @@ function applyToTag (styleElement, obj) {
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports) {
 
 /**
@@ -10161,7 +10077,7 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports) {
 
 var g;
@@ -10186,6 +10102,249 @@ try {
 
 module.exports = g;
 
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _ImageEditor = __webpack_require__(0);
+
+var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
+
+var _vue = __webpack_require__(1);
+
+var _vue2 = _interopRequireDefault(_vue);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var app = new _vue2.default({
+  el: "#ie-container",
+  data: {},
+  components: {
+    "image-editor": _ImageEditor2.default
+  }
+});
+
+// print rect
+// ctx.lineWidth = 10
+// ctx.lineCap = "butt | round | square"
+// ctx.lineJoin=  "round | bevel | miter"
+// let bgImg = document.querySelector("#bg-img")
+// bgImg.onload = function(e) {
+//   let imgData = document.querySelector("#img-data")
+//   imgData.innerHTML = `width: ${this.width}<br/>height: ${this.height}`
+//   // NOTE: canvas's content will be clear when you reset the width or height attribute
+//   bgCanvas.width = this.width
+//   bgCanvas.height = this.height
+//   bgContext.drawImage(bgImg, 0, 0)
+//   bgCanvas.style.display = "block"
+// }
+// // NOTE: this operation will draw the whole image and may stretch the image
+// // bgContext.drawImage(bgImg, 0, 0, 200, 300)
+// let isCreatingSprite = false
+// let startX, startY
+// let sprite
+// let paintCount = 0
+// bgCanvasWrapper.onmousedown = function({offsetX, offsetY, button}) {
+//   if(button !== 0 || !ctrlDown) {
+//     return
+//   }
+//   isCreatingSprite = true
+//   startX = offsetX
+//   startY = offsetY
+//   sprite = document.createElement("div")
+//   sprite.setAttribute("class", "sprite")
+//   bgCanvasWrapper.append(sprite)
+// }
+// bgCanvasWrapper.onmousemove = function({offsetX, offsetY, button}) {
+//   if(button !== 0 || !ctrlDown) {
+//     return
+//   }
+//   if(!isCreatingSprite) {
+//     return
+//   }
+//   let width = offsetX - startX
+//   let height = offsetY - startY
+//   let x = 0
+//   let y = 0
+//   if(width < 0) {
+//     width = -width
+//     x = startX - width
+//   } else {
+//     x = startX
+//   }
+//   if(height < 0) {
+//     height = -height
+//     y = startY - height
+//   } else {
+//     y = startY
+//   }
+//   sprite.style.left = `${x}px`
+//   sprite.style.top = `${y}px`
+//   sprite.style.width = `${width}px`
+//   sprite.style.height = `${height}px`
+// }
+// bgCanvasWrapper.onmouseup = function({offsetX, offsetY, button}) {
+//   if(button !== 0 || !ctrlDown) {
+//     return
+//   }
+//   isCreatingSprite = false
+//   sprite = null
+// }
+//
+// let ctrlDown = false
+// window.onkeydown = function(e) {
+//   // e.preventDefault()
+//   if(!ctrlDown && e.ctrlKey) {
+//     ctrlDown = true
+//     dragLayer.style.display = "block"
+//   }
+// }
+// window.onkeyup = function(e) {
+//   // e.preventDefault()
+//   if(ctrlDown && !e.ctrlKey) {
+//     ctrlDown = false
+//     dragLayer.style.display = "none"
+//   }
+// }
+
+/***/ }),
+/* 13 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = {
+  props: ["offsetX", "offsetY", "startX", "startY"],
+  data: function () {
+    return {};
+  },
+  computed: {
+    left: function () {
+      return this.offsetX < this.startX ? this.offsetX : this.startX;
+    },
+    top: function () {
+      return this.offsetY < this.startY ? this.offsetY : this.startY;
+    },
+    width: function () {
+      return Math.abs(this.offsetX - this.startX);
+    },
+    height: function () {
+      return Math.abs(this.offsetY - this.startY);
+    }
+  }
+};
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(4)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.sprite[data-v-ddbd259e] {\r\n  position: absolute;\r\n  background-color: rgba(248, 248, 77, 0.5);\n}\r\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+/* styles */
+__webpack_require__(17)
+
+var Component = __webpack_require__(6)(
+  /* script */
+  __webpack_require__(13),
+  /* template */
+  __webpack_require__(16),
+  /* scopeId */
+  "data-v-ddbd259e",
+  /* cssModules */
+  null
+)
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\Sprite.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] Sprite.vue: functional components are not supported with templates, they should use render functions.")}
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-ddbd259e", Component.options)
+  } else {
+    hotAPI.reload("data-v-ddbd259e", Component.options)
+  }
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', {
+    staticClass: "sprite",
+    style: ({
+      left: _vm.left + 'px',
+      top: _vm.top + 'px',
+      width: _vm.width + 'px',
+      height: _vm.height + 'px'
+    })
+  })
+},staticRenderFns: []}
+module.exports.render._withStripped = true
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+     require("vue-hot-reload-api").rerender("data-v-ddbd259e", module.exports)
+  }
+}
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(14);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(9)("0469728a", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
 
 /***/ })
 /******/ ]);

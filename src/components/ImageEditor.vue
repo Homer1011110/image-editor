@@ -1,41 +1,49 @@
 <template lang="html">
   <section class="canvas-section">
-    <div class="bg-canvas-wrapper">
+    <div class="bg-canvas-wrapper"
+      v-on:mousedown="mousedown"
+      v-on:mousemove="mousemove"
+      v-on:mouseup="mouseup"
+      >
       <canvas id="test" class="bg-canvas"
-        v-show="isImgLoaded"
+        v-if="isImgLoaded"
         v-bind:width="bgCanvasWidth" v-bind:height="bgCanvasHeight"
         ref="bgCanvas"
       ></canvas>
       <div class="drag-layer"
-        v-show="isCreatingSprite"
+        v-show="showDragLayer"
       ></div>
+      <sprite
+        v-for="sprite in sprites"
+        v-bind:offsetX="sprite.offsetX"
+        v-bind:offsetY="sprite.offsetY"
+        v-bind:startX="sprite.startX"
+        v-bind:startY="sprite.startY"
+      ></sprite>
     </div>
   </section>
 </template>
 
 <script>
+import Sprite from "./Sprite.vue"
 export default {
   data: function() {
     return {
       isCreatingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-3.jpg",
+      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
-      bgCanvasHeight: 300
+      bgCanvasHeight: 300,
+      bgContext: null,
+      showDragLayer: false,
+      sprites: [],
+      activeSprite: null
     }
   },
-  created: function() {
-    // let self = this
-    // let sampleImg = new Image()
-    // sampleImg.src = this.sampleImgUrl
-    // sampleImg.onload = function() {
-    //   self.isImgLoaded = true
-    //   self.bgCanvasWidth = this.width
-    //   self.bgCanvasHeight = this.height
-    // }
-    console.log("created: ", document.querySelector("#test"))
+  components: {
+    "sprite": Sprite
   },
-  mounted: function() {
+  created: function() {
     let self = this
     let sampleImg = new Image()
     sampleImg.src = this.sampleImgUrl
@@ -43,16 +51,59 @@ export default {
       self.isImgLoaded = true
       self.bgCanvasWidth = this.width
       self.bgCanvasHeight = this.height
+      setTimeout(function() {
+        self.bgContext = self.$refs.bgCanvas.getContext("2d")
+        self.drawBackground(sampleImg)
+      }, 1)
     }
-    setTimeout(function() {
-      console.log(self.$refs.bgCanvas)
-    }, 5000)
-    console.log("mounted: ", self.$refs.bgCanvas)
+    self.initKeyBoardListeners()
   },
   methods: {
+    initKeyBoardListeners: function(e) {
+      // NOTE: is it suitable to bind keydown/keyup listener here?
+      window.onkeydown = ({ctrlKey})=> {
+        if(!this.showDragLayer && ctrlKey) {
+          this.showDragLayer = true
+        }
+      }
+      window.onkeyup = ({ctrlKey})=> {
+        if(this.showDragLayer && !ctrlKey) {
+          this.showDragLayer = false
+        }
+      }
+    },
+    mousedown: function({offsetX, offsetY, button}) {
+      if(button != 0 || !this.showDragLayer) {
+        return
+      }
+      let sprite = {
+        startX: offsetX,
+        startY: offsetY,
+        offsetX: offsetX,
+        offsetY: offsetY
+      }
+      this.sprites.push(sprite)
+      this.activeSprite = sprite
+    },
+    mousemove: function({offsetX, offsetY, button}) {
+      if(button != 0 || !this.showDragLayer) {
+        return
+      }
+      if(!this.activeSprite) {
+        console.warn(`this.activeSprite is ${this.activeSprite}`)
+        return
+      }
+      this.activeSprite.offsetX = offsetX
+      this.activeSprite.offsetY = offsetY
+    },
+    mouseup: function({offsetX, offsetY, button}) {
+      if(button != 0 || !this.showDragLayer) {
+        return
+      }
+      this.activeSprite = null
+    },
     drawBackground: function(img) {
-      console.log(this.$refs, this.$refs["bgCanvas"])
-      console.log(this.$refs.bgCanvas)
+      this.bgContext.drawImage(img, 0, 0)
     }
   }
 }
@@ -72,10 +123,6 @@ export default {
   min-width: 500px;
   margin: 0 auto;
   border: 1px solid black;
-}
-.bg-canvas-wrapper > .sprite {
-  position: absolute;
-  background-color: rgba(248, 248, 77, 0.5);
 }
 .drag-layer {
   position: absolute;
