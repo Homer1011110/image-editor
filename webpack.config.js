@@ -25,9 +25,14 @@ const config = {
       },
       {
         test: /\.vue$/,
-        loader: "vue-loader"
+        use: [
+          {loader: "vue-loader"}
+        ]
       }
     ]
+  },
+  resolve: {
+    alias:{'vue$': 'vue/dist/vue.common.js'}
   },
   plugins: [
     new copyWebpackPlugin([
