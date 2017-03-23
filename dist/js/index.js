@@ -75,6 +75,7 @@
 
 var bgCanvas = document.querySelector("#bg-canvas");
 var bgCanvasWrapper = document.querySelector("#bg-canvas-wrapper");
+var dragLayer = document.querySelector("#drag-layer");
 
 if (!bgCanvas.getContext) {
   throw "your browser do not support canvas api";
@@ -107,8 +108,12 @@ var sprite = void 0;
 var paintCount = 0;
 bgCanvasWrapper.onmousedown = function (_ref) {
   var offsetX = _ref.offsetX,
-      offsetY = _ref.offsetY;
+      offsetY = _ref.offsetY,
+      button = _ref.button;
 
+  if (button !== 0 || !ctrlDown) {
+    return;
+  }
   isCreatingSprite = true;
   startX = offsetX;
   startY = offsetY;
@@ -121,9 +126,11 @@ bgCanvasWrapper.onmousedown = function (_ref) {
 bgCanvasWrapper.onmousemove = function (_ref2) {
   var offsetX = _ref2.offsetX,
       offsetY = _ref2.offsetY,
-      target = _ref2.target,
-      currentTarget = _ref2.currentTarget;
+      button = _ref2.button;
 
+  if (button !== 0 || !ctrlDown) {
+    return;
+  }
   if (!isCreatingSprite) {
     return;
   }
@@ -131,16 +138,33 @@ bgCanvasWrapper.onmousemove = function (_ref2) {
   var height = offsetY - startY;
   sprite.style.width = width + "px";
   sprite.style.height = height + "px";
-  // console.log("startX: ", startX, "width: ", width, "offsetX: ", offsetX)
 };
 bgCanvasWrapper.onmouseup = function (_ref3) {
   var offsetX = _ref3.offsetX,
-      offsetY = _ref3.offsetY;
+      offsetY = _ref3.offsetY,
+      button = _ref3.button;
 
+  if (button !== 0 || !ctrlDown) {
+    return;
+  }
   isCreatingSprite = false;
   sprite = null;
-  console.log("x movement: ", offsetX - startX);
-  console.log("y movement: ", offsetY - startY);
+};
+
+var ctrlDown = false;
+window.onkeydown = function (e) {
+  // e.preventDefault()
+  if (!ctrlDown && e.ctrlKey) {
+    ctrlDown = true;
+    dragLayer.style.display = "block";
+  }
+};
+window.onkeyup = function (e) {
+  // e.preventDefault()
+  if (ctrlDown && !e.ctrlKey) {
+    ctrlDown = false;
+    dragLayer.style.display = "none";
+  }
 };
 
 /***/ })

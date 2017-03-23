@@ -1,5 +1,6 @@
 let bgCanvas = document.querySelector("#bg-canvas")
 let bgCanvasWrapper = document.querySelector("#bg-canvas-wrapper")
+let dragLayer = document.querySelector("#drag-layer")
 
 if(!bgCanvas.getContext) {
   throw "your browser do not support canvas api"
@@ -29,7 +30,10 @@ let isCreatingSprite = false
 let startX, startY
 let sprite
 let paintCount = 0
-bgCanvasWrapper.onmousedown = function({offsetX, offsetY}) {
+bgCanvasWrapper.onmousedown = function({offsetX, offsetY, button}) {
+  if(button !== 0 || !ctrlDown) {
+    return
+  }
   isCreatingSprite = true
   startX = offsetX
   startY = offsetY
@@ -39,7 +43,10 @@ bgCanvasWrapper.onmousedown = function({offsetX, offsetY}) {
   sprite.style.top = startY + "px"
   bgCanvasWrapper.append(sprite)
 }
-bgCanvasWrapper.onmousemove = function({offsetX, offsetY, target, currentTarget}) {
+bgCanvasWrapper.onmousemove = function({offsetX, offsetY, button}) {
+  if(button !== 0 || !ctrlDown) {
+    return
+  }
   if(!isCreatingSprite) {
     return
   }
@@ -47,11 +54,27 @@ bgCanvasWrapper.onmousemove = function({offsetX, offsetY, target, currentTarget}
   let height = offsetY - startY
   sprite.style.width = `${width}px`
   sprite.style.height = `${height}px`
-  // console.log("startX: ", startX, "width: ", width, "offsetX: ", offsetX)
 }
-bgCanvasWrapper.onmouseup = function({offsetX, offsetY}) {
+bgCanvasWrapper.onmouseup = function({offsetX, offsetY, button}) {
+  if(button !== 0 || !ctrlDown) {
+    return
+  }
   isCreatingSprite = false
   sprite = null
-  console.log("x movement: ", offsetX - startX)
-  console.log("y movement: ", offsetY - startY)
+}
+
+let ctrlDown = false
+window.onkeydown = function(e) {
+  // e.preventDefault()
+  if(!ctrlDown && e.ctrlKey) {
+    ctrlDown = true
+    dragLayer.style.display = "block"
+  }
+}
+window.onkeyup = function(e) {
+  // e.preventDefault()
+  if(ctrlDown && !e.ctrlKey) {
+    ctrlDown = false
+    dragLayer.style.display = "none"
+  }
 }
