@@ -5,7 +5,8 @@
 </template>
 
 <script>
-export default {
+import Vue from "vue"
+let Sprite = {
   props: ["offsetX", "offsetY", "startX", "startY"],
   data: function() {
     return {}
@@ -25,11 +26,13 @@ export default {
     }
   }
 }
+export default Sprite
 </script>
 
 <style lang="css" scoped>
 .sprite {
   position: absolute;
   background-color: rgba(248, 248, 77, 0.5);
+  font-size: 14px;
 }
 </style>

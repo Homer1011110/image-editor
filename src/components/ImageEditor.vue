@@ -25,23 +25,25 @@
 </template>
 
 <script>
+import Vue from "vue"
 import Sprite from "./Sprite.vue"
+import CircleSprite from "./CircleSprite.vue"
 export default {
   data: function() {
     return {
-      isCreatingSprite: false,
+      isCreatingSprite: false,//is user dragging to create a sprite
       sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
       bgCanvasHeight: 300,
       bgContext: null,
-      showDragLayer: false,
+      showDragLayer: false,//control the darglayer to show or hide
       sprites: [],
       activeSprite: null
     }
   },
   components: {
-    "sprite": Sprite
+    "sprite": CircleSprite
   },
   created: function() {
     let self = this
@@ -51,10 +53,12 @@ export default {
       self.isImgLoaded = true
       self.bgCanvasWidth = this.width
       self.bgCanvasHeight = this.height
-      setTimeout(function() {
+      Vue.nextTick(function() {
         self.bgContext = self.$refs.bgCanvas.getContext("2d")
         self.drawBackground(sampleImg)
-      }, 1)
+      })
+      // setTimeout(function() {
+      // }, 1)
     }
     self.initKeyBoardListeners()
   },
@@ -76,6 +80,7 @@ export default {
       if(button != 0 || !this.showDragLayer) {
         return
       }
+      this.isCreatingSprite = true
       let sprite = {
         startX: offsetX,
         startY: offsetY,
@@ -85,8 +90,11 @@ export default {
       this.sprites.push(sprite)
       this.activeSprite = sprite
     },
-    mousemove: function({offsetX, offsetY, button}) {
+    mousemove: function({offsetX, offsetY, button, target}) {
       if(button != 0 || !this.showDragLayer) {
+        return
+      }
+      if(!this.isCreatingSprite) {
         return
       }
       if(!this.activeSprite) {
@@ -100,6 +108,7 @@ export default {
       if(button != 0 || !this.showDragLayer) {
         return
       }
+      this.isCreatingSprite = false
       this.activeSprite = null
     },
     drawBackground: function(img) {
@@ -130,7 +139,7 @@ export default {
   height: 100%;
   left: 0;
   top: 0;
-  display: none;
-  z-index: 1
+  display: block;
+  z-index: 1;
 }
 </style>
