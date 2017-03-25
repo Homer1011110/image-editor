@@ -5,7 +5,6 @@
 </template>
 
 <script>
-import Vue from "vue"
 let Sprite = {
   props: ["offsetX", "offsetY", "startX", "startY"],
   data: function() {

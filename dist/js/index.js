@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 21);
+/******/ 	return __webpack_require__(__webpack_require__.s = 20);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -9265,7 +9265,7 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12), __webpack_require__(20)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12), __webpack_require__(19)))
 
 /***/ }),
 /* 1 */
@@ -9396,7 +9396,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(19)
+var listToStyles = __webpack_require__(18)
 
 /*
 type StyleObject = {
@@ -9618,13 +9618,13 @@ function applyToTag (styleElement, obj) {
 
 
 /* styles */
-__webpack_require__(18)
+__webpack_require__(17)
 
 var Component = __webpack_require__(2)(
   /* script */
   __webpack_require__(8),
   /* template */
-  __webpack_require__(15),
+  __webpack_require__(14),
   /* scopeId */
   "data-v-ddbd259e",
   /* cssModules */
@@ -9656,7 +9656,7 @@ module.exports = Component.exports
 
 
 /* styles */
-__webpack_require__(16)
+__webpack_require__(15)
 
 var Component = __webpack_require__(2)(
   /* script */
@@ -9737,6 +9737,10 @@ var _CircleSprite = __webpack_require__(13);
 
 var _CircleSprite2 = _interopRequireDefault(_CircleSprite);
 
+var _eventBus = __webpack_require__(26);
+
+var _eventBus2 = _interopRequireDefault(_eventBus);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = {
@@ -9751,11 +9755,12 @@ exports.default = {
       showDragLayer: false, //control the darglayer to show or hide
       sprites: [],
       activeSprite: null,
-      spriteClassRandom: 0
+      spriteClassRandom: 0, // NOTE: for test
+      selectedSprite: null
     };
   },
   components: {
-    "sprite": _Sprite2.default,
+    "rect-sprite": _Sprite2.default,
     "circle-sprite": _CircleSprite2.default
   },
   render: function render(h) {
@@ -9777,6 +9782,7 @@ exports.default = {
             attrs: { width: this.bgCanvasWidth,
               height: this.bgCanvasHeight
             },
+            style: { display: this.isImgLoaded ? "block" : "none" },
             ref: "bgCanvas"
           },
           []
@@ -9805,12 +9811,17 @@ exports.default = {
       self.isImgLoaded = true;
       self.bgCanvasWidth = this.width;
       self.bgCanvasHeight = this.height;
-      _vue2.default.nextTick(function () {
+      self.$nextTick(function () {
         self.bgContext = self.$refs.bgCanvas.getContext("2d");
         self.drawBackground(sampleImg);
       });
     };
     self.initKeyBoardListeners();
+
+    _eventBus2.default.$on("sprite-selected", function (sprite) {
+      console.log(sprite);
+      self.selectedSprite = sprite;
+    });
   },
   methods: {
     initKeyBoardListeners: function initKeyBoardListeners(e) {
@@ -9847,13 +9858,8 @@ exports.default = {
         offsetX: offsetX,
         offsetY: offsetY
       };
-      if (this.spriteClassRandom == 0) {
-        this.spriteClassRandom = 1;
-        sprite.name = "sprite";
-      } else {
-        this.spriteClassRandom = 0;
-        sprite.name = "circle-sprite";
-      }
+      sprite.name = this.selectedSprite;
+      console.log(sprite.name);
       this.sprites.push(sprite);
       this.activeSprite = sprite;
     },
@@ -9903,12 +9909,12 @@ exports.default = {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
-var _vue = __webpack_require__(0);
-
-var _vue2 = _interopRequireDefault(_vue);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+//
+//
+//
+//
+//
+//
 
 var Sprite = {
   props: ["offsetX", "offsetY", "startX", "startY"],
@@ -9929,13 +9935,7 @@ var Sprite = {
       return Math.abs(this.offsetY - this.startY);
     }
   }
-}; //
-//
-//
-//
-//
-//
-
+};
 exports.default = Sprite;
 
 /***/ }),
@@ -10172,7 +10172,7 @@ process.umask = function() { return 0; };
 
 
 /* styles */
-__webpack_require__(17)
+__webpack_require__(16)
 
 var Component = __webpack_require__(2)(
   /* script */
@@ -10204,8 +10204,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 14 */,
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10228,7 +10227,7 @@ if (false) {
 }
 
 /***/ }),
-/* 16 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
@@ -10254,7 +10253,7 @@ if(false) {
 }
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
@@ -10280,7 +10279,7 @@ if(false) {
 }
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
@@ -10306,7 +10305,7 @@ if(false) {
 }
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ (function(module, exports) {
 
 /**
@@ -10339,7 +10338,7 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ (function(module, exports) {
 
 var g;
@@ -10366,19 +10365,23 @@ module.exports = g;
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
+var _vue = __webpack_require__(0);
+
+var _vue2 = _interopRequireDefault(_vue);
+
 var _ImageEditor = __webpack_require__(5);
 
 var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
 
-var _vue = __webpack_require__(0);
+var _SpriteSelectBox = __webpack_require__(21);
 
-var _vue2 = _interopRequireDefault(_vue);
+var _SpriteSelectBox2 = _interopRequireDefault(_SpriteSelectBox);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -10386,7 +10389,8 @@ var app = new _vue2.default({
   el: "#ie-container",
   data: {},
   components: {
-    "image-editor": _ImageEditor2.default
+    "image-editor": _ImageEditor2.default,
+    "sprite-select-box": _SpriteSelectBox2.default
   }
 });
 // print rect
@@ -10394,6 +10398,177 @@ var app = new _vue2.default({
 // ctx.lineCap = "butt | round | square"
 // ctx.lineJoin=  "round | bevel | miter"
 // let bgImg = document.querySelector("#bg-img")
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+/* styles */
+__webpack_require__(25)
+
+var Component = __webpack_require__(2)(
+  /* script */
+  __webpack_require__(22),
+  /* template */
+  __webpack_require__(24),
+  /* scopeId */
+  null,
+  /* cssModules */
+  null
+)
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\SpriteSelectBox.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] SpriteSelectBox.vue: functional components are not supported with templates, they should use render functions.")}
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-957098a4", Component.options)
+  } else {
+    hotAPI.reload("data-v-957098a4", Component.options)
+  }
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _eventBus = __webpack_require__(26);
+
+var _eventBus2 = _interopRequireDefault(_eventBus);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var SpriteSelectBox = {
+  data: function data() {
+    return {
+      selectedSprite: null
+    };
+  },
+  methods: {
+    selectSprite: function selectSprite(sprite) {
+      console.log(sprite);
+      this.selectedSprite = sprite;
+      _eventBus2.default.$emit("sprite-selected", this.selectedSprite);
+    }
+  }
+}; //
+//
+//
+//
+//
+//
+//
+
+exports.default = SpriteSelectBox;
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(1)();
+// imports
+
+
+// module
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', {
+    staticClass: "sprite-select-box"
+  }, [_c('button', {
+    staticClass: "sprite-selector",
+    on: {
+      "click": function($event) {
+        $event.preventDefault();
+        _vm.selectSprite('rect-sprite')
+      }
+    }
+  }, [_vm._v("矩形")]), _vm._v(" "), _c('button', {
+    staticClass: "sprite-selector",
+    on: {
+      "click": function($event) {
+        $event.preventDefault();
+        _vm.selectSprite('circle-sprite')
+      }
+    }
+  }, [_vm._v("圆形")])])
+},staticRenderFns: []}
+module.exports.render._withStripped = true
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+     require("vue-hot-reload-api").rerender("data-v-957098a4", module.exports)
+  }
+}
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(23);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(3)("12297d9a", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-957098a4!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./SpriteSelectBox.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-957098a4!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./SpriteSelectBox.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 26 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _vue = __webpack_require__(0);
+
+var _vue2 = _interopRequireDefault(_vue);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var eventBus = new _vue2.default();
+exports.default = eventBus;
 
 /***/ })
 /******/ ]);

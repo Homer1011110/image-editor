@@ -1,11 +1,13 @@
-import ImageEditor from "../components/ImageEditor.vue"
 import Vue from "vue"
+import ImageEditor from "../components/ImageEditor.vue"
+import SpriteSelectBox from "../components/SpriteSelectBox.vue"
 
 let app = new Vue({
   el: "#ie-container",
   data: {},
   components: {
-    "image-editor": ImageEditor
+    "image-editor": ImageEditor,
+    "sprite-select-box": SpriteSelectBox
   }
 })
 // print rect

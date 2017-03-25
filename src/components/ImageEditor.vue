@@ -2,6 +2,8 @@
 import Vue from "vue"
 import Sprite from "./Sprite.vue"
 import CircleSprite from "./CircleSprite.vue"
+import eventBus from "../base/eventBus"
+
 export default {
   data: function() {
     return {
@@ -14,11 +16,12 @@ export default {
       showDragLayer: false,//control the darglayer to show or hide
       sprites: [],
       activeSprite: null,
-      spriteClassRandom: 0
+      spriteClassRandom: 0,// NOTE: for test
+      selectedSprite: null
     }
   },
   components: {
-    "sprite": Sprite,
+    "rect-sprite": Sprite,
     "circle-sprite": CircleSprite
   },
   render: function(h) {
@@ -32,6 +35,7 @@ export default {
           <canvas class="bg-canvas"
             width = {this.bgCanvasWidth}
             height = {this.bgCanvasHeight}
+            style = {{display: this.isImgLoaded ? "block" : "none"}}
             ref="bgCanvas"
           ></canvas>
           <div class="drag-layer" style={{display: this.showDragLayer ? "block" : "none"}}></div>
@@ -63,12 +67,17 @@ export default {
       self.isImgLoaded = true
       self.bgCanvasWidth = this.width
       self.bgCanvasHeight = this.height
-      Vue.nextTick(function() {
+      self.$nextTick(function() {
         self.bgContext = self.$refs.bgCanvas.getContext("2d")
         self.drawBackground(sampleImg)
       })
     }
     self.initKeyBoardListeners()
+
+    eventBus.$on("sprite-selected", function(sprite) {
+      console.log(sprite)
+      self.selectedSprite = sprite
+    })
   },
   methods: {
     initKeyBoardListeners: function(e) {
@@ -95,13 +104,8 @@ export default {
         offsetX: offsetX,
         offsetY: offsetY
       }
-      if(this.spriteClassRandom == 0) {
-        this.spriteClassRandom = 1
-        sprite.name = "sprite"
-      } else {
-        this.spriteClassRandom = 0
-        sprite.name = "circle-sprite"
-      }
+      sprite.name = this.selectedSprite
+      console.log(sprite.name)
       this.sprites.push(sprite)
       this.activeSprite = sprite
     },
