@@ -1,29 +1,3 @@
-<template lang="html">
-  <section class="canvas-section">
-    <div class="bg-canvas-wrapper"
-      v-on:mousedown="mousedown"
-      v-on:mousemove="mousemove"
-      v-on:mouseup="mouseup"
-      >
-      <canvas id="test" class="bg-canvas"
-        v-if="isImgLoaded"
-        v-bind:width="bgCanvasWidth" v-bind:height="bgCanvasHeight"
-        ref="bgCanvas"
-      ></canvas>
-      <div class="drag-layer"
-        v-show="showDragLayer"
-      ></div>
-      <sprite
-        v-for="sprite in sprites"
-        v-bind:offsetX="sprite.offsetX"
-        v-bind:offsetY="sprite.offsetY"
-        v-bind:startX="sprite.startX"
-        v-bind:startY="sprite.startY"
-      ></sprite>
-    </div>
-  </section>
-</template>
-
 <script>
 import Vue from "vue"
 import Sprite from "./Sprite.vue"
@@ -39,11 +13,47 @@ export default {
       bgContext: null,
       showDragLayer: false,//control the darglayer to show or hide
       sprites: [],
-      activeSprite: null
+      activeSprite: null,
+      spriteClassRandom: 0
     }
   },
   components: {
-    "sprite": CircleSprite
+    "sprite": Sprite,
+    "circle-sprite": CircleSprite
+  },
+  render: function(h) {
+    return (
+      <section class="canvas-section">
+        <div class="bg-canvas-wrapper"
+          onMousedown = {this.mousedown}
+          onMousemove = {this.mousemove}
+          onMouseup = {this.mouseup}
+        >
+          <canvas class="bg-canvas"
+            width = {this.bgCanvasWidth}
+            height = {this.bgCanvasHeight}
+            ref="bgCanvas"
+          ></canvas>
+          <div class="drag-layer" style={{display: this.showDragLayer ? "block" : "none"}}></div>
+          {
+            this.sprites.map(function(sprite) {
+              return h(
+                sprite.name,
+                {
+                  attrs: {
+                    offsetX: sprite.offsetX,
+                    offsetY: sprite.offsetY,
+                    startX: sprite.startX,
+                    startY: sprite.startY
+                  }
+                },
+                []
+              )
+            })
+          }
+        </div>
+      </section>
+    )
   },
   created: function() {
     let self = this
@@ -57,8 +67,6 @@ export default {
         self.bgContext = self.$refs.bgCanvas.getContext("2d")
         self.drawBackground(sampleImg)
       })
-      // setTimeout(function() {
-      // }, 1)
     }
     self.initKeyBoardListeners()
   },
@@ -86,6 +94,13 @@ export default {
         startY: offsetY,
         offsetX: offsetX,
         offsetY: offsetY
+      }
+      if(this.spriteClassRandom == 0) {
+        this.spriteClassRandom = 1
+        sprite.name = "sprite"
+      } else {
+        this.spriteClassRandom = 0
+        sprite.name = "circle-sprite"
       }
       this.sprites.push(sprite)
       this.activeSprite = sprite
