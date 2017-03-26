@@ -16,14 +16,17 @@ let SpriteSelectBox = {
   },
   methods: {
     selectSprite: function(sprite) {
-      console.log(sprite)
       this.selectedSprite = sprite
-      eventBus.$emit("sprite-selected", this.selectedSprite)
+      eventBus.$emit("spriteselected", this.selectedSprite)
     }
   }
 }
 export default SpriteSelectBox
 </script>
 
-<style lang="css">
+<style lang="css" scoped>
+.sprite-select-box {
+  position: relative;
+  z-index: 5;
+}
 </style>

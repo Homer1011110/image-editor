@@ -72,11 +72,12 @@ export default {
         self.drawBackground(sampleImg)
       })
     }
-    self.initKeyBoardListeners()
+    // self.initKeyBoardListeners()
 
-    eventBus.$on("sprite-selected", function(sprite) {
+    eventBus.$on("spriteselected", function(sprite) {
       console.log(sprite)
       self.selectedSprite = sprite
+      self.showDragLayer = true
     })
   },
   methods: {
@@ -94,7 +95,7 @@ export default {
       }
     },
     mousedown: function({offsetX, offsetY, button}) {
-      if(button != 0 || !this.showDragLayer) {
+      if(button != 0 || !this.showDragLayer || !this.selectedSprite) {
         return
       }
       this.isCreatingSprite = true
@@ -105,7 +106,6 @@ export default {
         offsetY: offsetY
       }
       sprite.name = this.selectedSprite
-      console.log(sprite.name)
       this.sprites.push(sprite)
       this.activeSprite = sprite
     },
@@ -129,6 +129,8 @@ export default {
       }
       this.isCreatingSprite = false
       this.activeSprite = null
+      this.showDragLayer = false
+      eventBus.$emit("spritecreate")
     },
     drawBackground: function(img) {
       this.bgContext.drawImage(img, 0, 0)
@@ -145,6 +147,7 @@ export default {
 .bg-canvas-wrapper {
   position: relative;
   display: inline-block;
+  z-index: 5;
 }
 .bg-canvas {
   max-width: 800px;
