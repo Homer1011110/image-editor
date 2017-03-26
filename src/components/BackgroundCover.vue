@@ -15,7 +15,7 @@ export default {
     eventBus.$on("spriteselected", (sprte)=> {
       this.isShow = true
     })
-    eventBus.$on("spritecreate", ()=> {
+    eventBus.$on("spriteactionend", ()=> {
       this.isShow = false
     })
   }

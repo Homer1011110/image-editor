@@ -8,6 +8,7 @@ export default {
   data: function() {
     return {
       isCreatingSprite: false,//is user dragging to create a sprite
+      isMovingSprite: false,
       sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
@@ -46,15 +47,15 @@ export default {
                 sprite.name,
                 {
                   props: {
-                    offsetX: sprite.offsetX,
-                    offsetY: sprite.offsetY,
-                    startX: sprite.startX,
-                    startY: sprite.startY,
+                    width: sprite.width,
+                    height: sprite.height,
+                    x: sprite.x,
+                    y: sprite.y,
                     isActive: sprite.isActive
                   },
                   nativeOn: {
-                    mousedown: ()=>{
-                      return this.SpriteMouseDownHandler(index)
+                    mousedown: (e)=>{
+                      this.SpriteMouseDownHandler(index, e)
                     }
                   },
                   ref: `sprite-${index}`
@@ -97,9 +98,14 @@ export default {
       let sprite = {
         startX: offsetX,
         startY: offsetY,
-        offsetX: offsetX,
-        offsetY: offsetY,
-        isActive: true
+        mousedownX: offsetX,
+        mousedownY: offsetY,
+        x: offsetX,
+        y: offsetY,
+        width: 0,
+        height: 0,
+        isActive: true,
+        isMoving: false
       }
       sprite.name = this.selectedSprite
       this.sprites.push(sprite)
@@ -109,28 +115,42 @@ export default {
       if(button != 0 || !this.showDragLayer) {
         return
       }
-      if(!this.isCreatingSprite) {
-        return
-      }
       if(!this.activeSprite) {
         console.warn(`this.activeSprite is ${this.activeSprite}`)
         return
       }
-      this.activeSprite.offsetX = offsetX
-      this.activeSprite.offsetY = offsetY
+      if(this.isCreatingSprite) {
+        this.activeSprite.x = Math.min(this.activeSprite.startX, offsetX)
+        this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY)
+        this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX)
+        this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY)
+      } else if(this.isMovingSprite){
+        this.activeSprite.x = this.activeSprite.startX + (offsetX - this.activeSprite.mousedownX)
+        this.activeSprite.y = this.activeSprite.startY + (offsetY - this.activeSprite.mousedownY)
+      }
     },
     mouseup: function({offsetX, offsetY, button}) {
       if(button != 0 || !this.showDragLayer) {
         return
       }
+      this.activeSprite.startX = this.activeSprite.x
+      this.activeSprite.startY = this.activeSprite.y
       this.isCreatingSprite = false
+      this.isMovingSprite = false
       this.showDragLayer = false
-      eventBus.$emit("spritecreate")
+      eventBus.$emit("spriteactionend")
     },
-    SpriteMouseDownHandler: function(index) {
+    SpriteMouseDownHandler: function(index, {button, offsetX, offsetY, target}) {
+      if(button != 0) {
+        return
+      }
       this.activeSprite.isActive = false
       this.activeSprite = this.sprites[index]
+      this.activeSprite.mousedownX = this.activeSprite.x + offsetX
+      this.activeSprite.mousedownY =  this.activeSprite.y + offsetY
       this.activeSprite.isActive = true
+      this.isMovingSprite = true
+      this.showDragLayer = true
     },
     drawBackground: function(img) {
       this.bgContext.drawImage(img, 0, 0)
@@ -163,5 +183,6 @@ export default {
   top: 0;
   display: block;
   z-index: 1;
+  background-color: rgba(248, 0, 0, 0.5);
 }
 </style>

@@ -9842,6 +9842,7 @@ exports.default = {
   data: function data() {
     return {
       isCreatingSprite: false, //is user dragging to create a sprite
+      isMovingSprite: false,
       sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
@@ -9891,15 +9892,15 @@ exports.default = {
         ), this.sprites.map(function (sprite, index) {
           return h(sprite.name, {
             props: {
-              offsetX: sprite.offsetX,
-              offsetY: sprite.offsetY,
-              startX: sprite.startX,
-              startY: sprite.startY,
+              width: sprite.width,
+              height: sprite.height,
+              x: sprite.x,
+              y: sprite.y,
               isActive: sprite.isActive
             },
             nativeOn: {
-              mousedown: function mousedown() {
-                return _this.SpriteMouseDownHandler(index);
+              mousedown: function mousedown(e) {
+                _this.SpriteMouseDownHandler(index, e);
               }
             },
             ref: "sprite-" + index
@@ -9943,9 +9944,14 @@ exports.default = {
       var sprite = {
         startX: offsetX,
         startY: offsetY,
-        offsetX: offsetX,
-        offsetY: offsetY,
-        isActive: true
+        mousedownX: offsetX,
+        mousedownY: offsetY,
+        x: offsetX,
+        y: offsetY,
+        width: 0,
+        height: 0,
+        isActive: true,
+        isMoving: false
       };
       sprite.name = this.selectedSprite;
       this.sprites.push(sprite);
@@ -9960,15 +9966,19 @@ exports.default = {
       if (button != 0 || !this.showDragLayer) {
         return;
       }
-      if (!this.isCreatingSprite) {
-        return;
-      }
       if (!this.activeSprite) {
         console.warn("this.activeSprite is " + this.activeSprite);
         return;
       }
-      this.activeSprite.offsetX = offsetX;
-      this.activeSprite.offsetY = offsetY;
+      if (this.isCreatingSprite) {
+        this.activeSprite.x = Math.min(this.activeSprite.startX, offsetX);
+        this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY);
+        this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX);
+        this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY);
+      } else if (this.isMovingSprite) {
+        this.activeSprite.x = this.activeSprite.startX + (offsetX - this.activeSprite.mousedownX);
+        this.activeSprite.y = this.activeSprite.startY + (offsetY - this.activeSprite.mousedownY);
+      }
     },
     mouseup: function mouseup(_ref3) {
       var offsetX = _ref3.offsetX,
@@ -9978,14 +9988,29 @@ exports.default = {
       if (button != 0 || !this.showDragLayer) {
         return;
       }
+      this.activeSprite.startX = this.activeSprite.x;
+      this.activeSprite.startY = this.activeSprite.y;
       this.isCreatingSprite = false;
+      this.isMovingSprite = false;
       this.showDragLayer = false;
-      _eventBus2.default.$emit("spritecreate");
+      _eventBus2.default.$emit("spriteactionend");
     },
-    SpriteMouseDownHandler: function SpriteMouseDownHandler(index) {
+    SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4) {
+      var button = _ref4.button,
+          offsetX = _ref4.offsetX,
+          offsetY = _ref4.offsetY,
+          target = _ref4.target;
+
+      if (button != 0) {
+        return;
+      }
       this.activeSprite.isActive = false;
       this.activeSprite = this.sprites[index];
+      this.activeSprite.mousedownX = this.activeSprite.x + offsetX;
+      this.activeSprite.mousedownY = this.activeSprite.y + offsetY;
       this.activeSprite.isActive = true;
+      this.isMovingSprite = true;
+      this.showDragLayer = true;
     },
     drawBackground: function drawBackground(img) {
       this.bgContext.drawImage(img, 0, 0);
@@ -10012,7 +10037,7 @@ Object.defineProperty(exports, "__esModule", {
 //
 
 var Sprite = {
-  props: ["offsetX", "offsetY", "startX", "startY", "isActive"],
+  props: ["width", "height", "x", "y", "isActive"],
   data: function data() {
     return {};
   },
@@ -10022,12 +10047,6 @@ var Sprite = {
     },
     top: function top() {
       return this.offsetY < this.startY ? this.offsetY : this.startY;
-    },
-    width: function width() {
-      return Math.abs(this.offsetX - this.startX);
-    },
-    height: function height() {
-      return Math.abs(this.offsetY - this.startY);
     }
   }
 };
@@ -10121,7 +10140,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  text-align: center;\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n  z-index: 5;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: block;\n  z-index: 1;\n}\n", ""]);
+exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  text-align: center;\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n  z-index: 5;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: block;\n  z-index: 1;\n  background-color: rgba(248, 0, 0, 0.5);\n}\n", ""]);
 
 // exports
 
@@ -10422,8 +10441,8 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       active: _vm.isActive
     },
     style: ({
-      left: _vm.left + 'px',
-      top: _vm.top + 'px',
+      left: _vm.x + 'px',
+      top: _vm.y + 'px',
       width: _vm.width + 'px',
       height: _vm.height + 'px'
     })
@@ -10643,7 +10662,7 @@ exports.default = {
     _eventBus2.default.$on("spriteselected", function (sprte) {
       _this.isShow = true;
     });
-    _eventBus2.default.$on("spritecreate", function () {
+    _eventBus2.default.$on("spriteactionend", function () {
       _this.isShow = false;
     });
   }

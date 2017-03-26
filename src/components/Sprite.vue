@@ -1,13 +1,13 @@
 <template lang="html">
   <div class="sprite"
-    v-bind:style="{left: left+'px', top: top+'px', width: width+'px', height: height+'px'}"
+    v-bind:style="{left: x+'px', top: y+'px', width: width+'px', height: height+'px'}"
     v-bind:class="{active: isActive}"
   ></div>
 </template>
 
 <script>
 let Sprite = {
-  props: ["offsetX", "offsetY", "startX", "startY", "isActive"],
+  props: ["width", "height", "x", "y", "isActive"],
   data: function() {
     return {}
   },
@@ -17,12 +17,6 @@ let Sprite = {
     },
     top: function() {
       return this.offsetY < this.startY ? this.offsetY : this.startY
-    },
-    width: function() {
-      return Math.abs(this.offsetX - this.startX)
-    },
-    height: function() {
-      return Math.abs(this.offsetY - this.startY)
     }
   }
 }
