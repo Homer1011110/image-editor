@@ -1,12 +1,13 @@
 <template lang="html">
   <div class="sprite"
     v-bind:style="{left: left+'px', top: top+'px', width: width+'px', height: height+'px'}"
+    v-bind:class="{active: isActive}"
   ></div>
 </template>
 
 <script>
 let Sprite = {
-  props: ["offsetX", "offsetY", "startX", "startY"],
+  props: ["offsetX", "offsetY", "startX", "startY", "isActive"],
   data: function() {
     return {}
   },
@@ -33,5 +34,8 @@ export default Sprite
   position: absolute;
   background-color: rgba(248, 248, 77, 0.5);
   font-size: 14px;
+}
+.sprite.active {
+  border: 1px dotted black;
 }
 </style>

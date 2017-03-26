@@ -14,11 +14,9 @@ export default {
   created: function() {
     eventBus.$on("spriteselected", (sprte)=> {
       this.isShow = true
-      console.log("background-cover, spriteselected")
     })
     eventBus.$on("spritecreate", ()=> {
       this.isShow = false
-      console.log("background-cover, spritecreate")
     })
   }
 }

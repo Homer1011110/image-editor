@@ -16,7 +16,6 @@ export default {
       showDragLayer: false,//control the darglayer to show or hide
       sprites: [],
       activeSprite: null,
-      spriteClassRandom: 0,// NOTE: for test
       selectedSprite: null
     }
   },
@@ -28,9 +27,6 @@ export default {
     return (
       <section class="canvas-section">
         <div class="bg-canvas-wrapper"
-          onMousedown = {this.mousedown}
-          onMousemove = {this.mousemove}
-          onMouseup = {this.mouseup}
         >
           <canvas class="bg-canvas"
             width = {this.bgCanvasWidth}
@@ -38,20 +34,31 @@ export default {
             style = {{display: this.isImgLoaded ? "block" : "none"}}
             ref="bgCanvas"
           ></canvas>
-          <div class="drag-layer" style={{display: this.showDragLayer ? "block" : "none"}}></div>
+          <div class="drag-layer"
+            style={{display: this.showDragLayer ? "block" : "none"}}
+            onMousedown = {this.mousedown}
+            onMousemove = {this.mousemove}
+            onMouseup = {this.mouseup}
+          ></div>
           {
-            this.sprites.map(function(sprite) {
+            this.sprites.map((sprite, index)=> {
               return h(
                 sprite.name,
                 {
-                  attrs: {
+                  props: {
                     offsetX: sprite.offsetX,
                     offsetY: sprite.offsetY,
                     startX: sprite.startX,
-                    startY: sprite.startY
-                  }
-                },
-                []
+                    startY: sprite.startY,
+                    isActive: sprite.isActive
+                  },
+                  nativeOn: {
+                    mousedown: ()=>{
+                      return this.SpriteMouseDownHandler(index)
+                    }
+                  },
+                  ref: `sprite-${index}`
+                }
               )
             })
           }
@@ -72,28 +79,16 @@ export default {
         self.drawBackground(sampleImg)
       })
     }
-    // self.initKeyBoardListeners()
 
     eventBus.$on("spriteselected", function(sprite) {
-      console.log(sprite)
       self.selectedSprite = sprite
       self.showDragLayer = true
+      if(self.activeSprite) {
+        self.activeSprite.isActive = false
+      }
     })
   },
   methods: {
-    initKeyBoardListeners: function(e) {
-      // NOTE: is it suitable to bind keydown/keyup listener here?
-      window.onkeydown = ({ctrlKey})=> {
-        if(!this.showDragLayer && ctrlKey) {
-          this.showDragLayer = true
-        }
-      }
-      window.onkeyup = ({ctrlKey})=> {
-        if(this.showDragLayer && !ctrlKey) {
-          this.showDragLayer = false
-        }
-      }
-    },
     mousedown: function({offsetX, offsetY, button}) {
       if(button != 0 || !this.showDragLayer || !this.selectedSprite) {
         return
@@ -103,7 +98,8 @@ export default {
         startX: offsetX,
         startY: offsetY,
         offsetX: offsetX,
-        offsetY: offsetY
+        offsetY: offsetY,
+        isActive: true
       }
       sprite.name = this.selectedSprite
       this.sprites.push(sprite)
@@ -128,9 +124,13 @@ export default {
         return
       }
       this.isCreatingSprite = false
-      this.activeSprite = null
       this.showDragLayer = false
       eventBus.$emit("spritecreate")
+    },
+    SpriteMouseDownHandler: function(index) {
+      this.activeSprite.isActive = false
+      this.activeSprite = this.sprites[index]
+      this.activeSprite.isActive = true
     },
     drawBackground: function(img) {
       this.bgContext.drawImage(img, 0, 0)
