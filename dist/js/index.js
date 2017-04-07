@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 14);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -195,7 +195,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(25)
+var listToStyles = __webpack_require__(30)
 
 /*
 type StyleObject = {
@@ -9647,7 +9647,7 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(17), __webpack_require__(26)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20), __webpack_require__(31)))
 
 /***/ }),
 /* 4 */
@@ -9675,13 +9675,13 @@ exports.default = eventBus;
 
 
 /* styles */
-__webpack_require__(24)
+__webpack_require__(29)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(10),
+  __webpack_require__(12),
   /* template */
-  __webpack_require__(20),
+  __webpack_require__(24),
   /* scopeId */
   "data-v-ddbd259e",
   /* cssModules */
@@ -9713,11 +9713,49 @@ module.exports = Component.exports
 
 
 /* styles */
-__webpack_require__(21)
+__webpack_require__(26)
 
 var Component = __webpack_require__(1)(
   /* script */
   __webpack_require__(9),
+  /* template */
+  __webpack_require__(22),
+  /* scopeId */
+  "data-v-5e13cd6d",
+  /* cssModules */
+  null
+)
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/BackgroundCover.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] BackgroundCover.vue: functional components are not supported with templates, they should use render functions.")}
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-5e13cd6d", Component.options)
+  } else {
+    hotAPI.reload("data-v-5e13cd6d", Component.options)
+  }
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+/* styles */
+__webpack_require__(25)
+
+var Component = __webpack_require__(1)(
+  /* script */
+  __webpack_require__(11),
   /* template */
   null,
   /* scopeId */
@@ -9745,18 +9783,18 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(33)
+__webpack_require__(28)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(11),
+  __webpack_require__(13),
   /* template */
-  __webpack_require__(19),
+  __webpack_require__(23),
   /* scopeId */
   "data-v-957098a4",
   /* cssModules */
@@ -9783,7 +9821,45 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 8 */
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _eventBus = __webpack_require__(4);
+
+var _eventBus2 = _interopRequireDefault(_eventBus);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = {
+  data: function data() {
+    return {
+      isShow: false
+    };
+  },
+  created: function created() {
+    var _this = this;
+
+    _eventBus2.default.$on("spriteselected", function (sprte) {
+      _this.isShow = true;
+    });
+    _eventBus2.default.$on("spriteactionend", function () {
+      _this.isShow = false;
+    });
+  }
+}; //
+//
+//
+//
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9810,7 +9886,7 @@ var CircleSprite = {
 exports.default = CircleSprite;
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9828,7 +9904,7 @@ var _Sprite = __webpack_require__(5);
 
 var _Sprite2 = _interopRequireDefault(_Sprite);
 
-var _CircleSprite = __webpack_require__(18);
+var _CircleSprite = __webpack_require__(21);
 
 var _CircleSprite2 = _interopRequireDefault(_CircleSprite);
 
@@ -9839,21 +9915,6 @@ var _eventBus2 = _interopRequireDefault(_eventBus);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = {
-  data: function data() {
-    return {
-      isCreatingSprite: false, //is user dragging to create a sprite
-      isMovingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
-      isImgLoaded: false,
-      bgCanvasWidth: 300,
-      bgCanvasHeight: 300,
-      bgContext: null,
-      showDragLayer: false, //control the darglayer to show or hide
-      sprites: [],
-      activeSprite: null,
-      selectedSprite: null
-    };
-  },
   components: {
     "rect-sprite": _Sprite2.default,
     "circle-sprite": _CircleSprite2.default
@@ -9909,6 +9970,23 @@ exports.default = {
       )]
     );
   },
+  data: function data() {
+    return {
+      isCreatingSprite: false, //is user dragging to create a sprite
+      isMovingSprite: false,
+      isResizingSprite: false,
+      sampleImgUrl: "http://localhost:8089/imgs/bg-3.jpg",
+      isImgLoaded: false,
+      bgCanvasWidth: 300,
+      bgCanvasHeight: 300,
+      bgContext: null,
+      showDragLayer: false, //control the darglayer to show or hide
+      sprites: [],
+      activeSprite: null,
+      activeSpriteOldState: null,
+      selectedSprite: null
+    };
+  },
   created: function created() {
     var self = this;
     var sampleImg = new Image();
@@ -9944,9 +10022,9 @@ exports.default = {
       var sprite = {
         startX: offsetX,
         startY: offsetY,
-        mousedownX: offsetX,
-        mousedownY: offsetY,
-        x: offsetX,
+        mousedownX: offsetX, // coordinate of mousedown when create|move|resize
+        mousedownY: offsetY, //
+        x: offsetX, // coordinate of sprite
         y: offsetY,
         width: 0,
         height: 0,
@@ -9976,8 +10054,37 @@ exports.default = {
         this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX);
         this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY);
       } else if (this.isMovingSprite) {
-        this.activeSprite.x = this.activeSprite.startX + (offsetX - this.activeSprite.mousedownX);
-        this.activeSprite.y = this.activeSprite.startY + (offsetY - this.activeSprite.mousedownY);
+        this.activeSprite.x = this.activeSpriteOldState.x + (offsetX - this.activeSprite.mousedownX);
+        this.activeSprite.y = this.activeSpriteOldState.y + (offsetY - this.activeSprite.mousedownY);
+      } else if (this.isResizingSprite) {
+        var diffX = offsetX - this.activeSprite.mousedownX;
+        var diffY = offsetY - this.activeSprite.mousedownY;
+        switch (this.activeSprite.dragDot) {
+          case "left-top":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width);
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height);
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX);
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY);
+            break;
+          case "right-top":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX);
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height);
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX);
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY);
+            break;
+          case "right-bottom":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX);
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY);
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX);
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
+            break;
+          case "left-bottom":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width);
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY);
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX);
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
+            break;
+        }
       }
     },
     mouseup: function mouseup(_ref3) {
@@ -9988,10 +10095,9 @@ exports.default = {
       if (button != 0 || !this.showDragLayer) {
         return;
       }
-      this.activeSprite.startX = this.activeSprite.x;
-      this.activeSprite.startY = this.activeSprite.y;
       this.isCreatingSprite = false;
       this.isMovingSprite = false;
+      this.isResizingSprite = false;
       this.showDragLayer = false;
       _eventBus2.default.$emit("spriteactionend");
     },
@@ -10006,12 +10112,47 @@ exports.default = {
       }
       this.activeSprite.isActive = false;
       this.activeSprite = this.sprites[index];
-      this.activeSprite.mousedownX = this.activeSprite.x + offsetX;
-      this.activeSprite.mousedownY = this.activeSprite.y + offsetY;
       this.activeSprite.isActive = true;
-      this.isMovingSprite = true;
       this.showDragLayer = true;
+      this.saveSpriteOldState();
+      if (/dragable/.test(target.className)) {
+        // NOTE: resize
+        console.log("mousedown fire in dragable");
+        if (/left-top/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
+          this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY;
+          this.activeSprite.dragDot = "left-top";
+        } else if (/right-top/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX;
+          this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY;
+          this.activeSprite.dragDot = "right-top";
+        } else if (/right-bottom/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX;
+          this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY;
+          this.activeSprite.dragDot = "right-bottom";
+        } else if (/left-bottom/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
+          this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY;
+          this.activeSprite.dragDot = "left-bottom";
+        }
+        this.isResizingSprite = true;
+      } else {
+        // NOTE: move
+        this.activeSprite.mousedownX = this.activeSprite.x + offsetX;
+        this.activeSprite.mousedownY = this.activeSprite.y + offsetY;
+        this.isMovingSprite = true;
+      }
     },
+    saveSpriteOldState: function saveSpriteOldState() {
+      var _activeSprite = this.activeSprite,
+          x = _activeSprite.x,
+          y = _activeSprite.y,
+          width = _activeSprite.width,
+          height = _activeSprite.height;
+
+      this.activeSpriteOldState = { x: x, y: y, width: width, height: height };
+    },
+
     drawBackground: function drawBackground(img) {
       this.bgContext.drawImage(img, 0, 0);
     }
@@ -10019,7 +10160,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10028,6 +10169,15 @@ exports.default = {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -10053,7 +10203,7 @@ var Sprite = {
 exports.default = Sprite;
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10092,7 +10242,7 @@ var SpriteSelectBox = {
 exports.default = SpriteSelectBox;
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10102,15 +10252,15 @@ var _vue = __webpack_require__(3);
 
 var _vue2 = _interopRequireDefault(_vue);
 
-var _ImageEditor = __webpack_require__(6);
+var _ImageEditor = __webpack_require__(7);
 
 var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
 
-var _SpriteSelectBox = __webpack_require__(7);
+var _SpriteSelectBox = __webpack_require__(8);
 
 var _SpriteSelectBox2 = _interopRequireDefault(_SpriteSelectBox);
 
-var _BackgroundCover = __webpack_require__(27);
+var _BackgroundCover = __webpack_require__(6);
 
 var _BackgroundCover2 = _interopRequireDefault(_BackgroundCover);
 
@@ -10132,7 +10282,7 @@ var app = new _vue2.default({
 // let bgImg = document.querySelector("#bg-img")
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)();
@@ -10140,27 +10290,12 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  text-align: center;\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n  z-index: 5;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: block;\n  z-index: 1;\n  background-color: rgba(248, 0, 0, 0.5);\n}\n", ""]);
+exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  text-align: center;\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n  z-index: 5;\n  overflow: hidden;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: block;\n  z-index: 1;\n  background-color: rgba(248, 0, 0, 0.5);\n}\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(0)();
-// imports
-
-
-// module
-exports.push([module.i, "\n.sprite[data-v-75803321] {\n  position: absolute;\n  background-color: rgba(248, 248, 77, 0.5);\n  border-radius: 50%;\n}\n.sprite.active[data-v-75803321] {\n  border: 1px dotted black;\n}\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 15 */,
 /* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10169,13 +10304,55 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite[data-v-ddbd259e] {\n  position: absolute;\n  background-color: rgba(248, 248, 77, 0.5);\n  font-size: 14px;\n}\n.sprite.active[data-v-ddbd259e] {\n  border: 1px dotted black;\n}\n", ""]);
+exports.push([module.i, "\n.background-cover[data-v-5e13cd6d] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: block;\n}\n.background-cover.hide[data-v-5e13cd6d] {\n  display: none;\n}\n", ""]);
 
 // exports
 
 
 /***/ }),
 /* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.sprite[data-v-75803321] {\n  position: absolute;\n  background-color: rgba(248, 248, 77, 0.5);\n  border-radius: 50%;\n}\n.sprite.active[data-v-75803321] {\n  border: 1px dotted black;\n}\n.drag-dot[data-v-75803321] {\n  width: 10px;\n  height: 10px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n}\n.drag-dot.left-top[data-v-75803321] {\n  left: -5px;\n  top: -5px;\n}\n.drag-dot.left-bottom[data-v-75803321] {\n  left: -5px;\n  bottom: -5px;\n}\n.drag-dot.right-top[data-v-75803321] {\n  right: -5px;\n  top: -5px;\n}\n.drag-dot.right-bottom[data-v-75803321] {\n  right: -5px;\n  bottom: -5px;\n}\n\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\n  position: relative;\n  z-index: 5;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.sprite[data-v-ddbd259e] {\n  position: absolute;\n  background-color: rgba(248, 248, 77, 0.5);\n  font-size: 14px;\n}\n.sprite.active[data-v-ddbd259e] {\n  border: 1px dotted black;\n}\n/*.drag-bar {\n\n}*/\n.drag-dot[data-v-ddbd259e] {\n  width: 10px;\n  height: 10px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n}\n.drag-dot.left-top[data-v-ddbd259e] {\n  left: -5px;\n  top: -5px;\n}\n.drag-dot.left-bottom[data-v-ddbd259e] {\n  left: -5px;\n  bottom: -5px;\n}\n.drag-dot.right-top[data-v-ddbd259e] {\n  right: -5px;\n  top: -5px;\n}\n.drag-dot.right-bottom[data-v-ddbd259e] {\n  right: -5px;\n  bottom: -5px;\n}\n\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 20 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -10361,16 +10538,16 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 18 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(22)
+__webpack_require__(27)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(8),
+  __webpack_require__(10),
   /* template */
   null,
   /* scopeId */
@@ -10398,7 +10575,27 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 19 */
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', {
+    staticClass: "background-cover",
+    class: {
+      hide: !_vm.isShow
+    }
+  })
+},staticRenderFns: []}
+module.exports.render._withStripped = true
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+     require("vue-hot-reload-api").rerender("data-v-5e13cd6d", module.exports)
+  }
+}
+
+/***/ }),
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10431,7 +10628,7 @@ if (false) {
 }
 
 /***/ }),
-/* 20 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10446,7 +10643,23 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       width: _vm.width + 'px',
       height: _vm.height + 'px'
     })
-  })
+  }, [_c('div', {
+    staticClass: "dragable drag-bar top"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar bottom"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar left"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar right"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot left-top"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot right-top"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot right-bottom"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot left-bottom"
+  })])
 },staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {
@@ -10457,13 +10670,13 @@ if (false) {
 }
 
 /***/ }),
-/* 21 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(13);
+var content = __webpack_require__(15);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -10483,13 +10696,39 @@ if(false) {
 }
 
 /***/ }),
-/* 22 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(14);
+var content = __webpack_require__(16);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(2)("2a3ff2e8", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-5e13cd6d&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./BackgroundCover.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-5e13cd6d&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./BackgroundCover.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 27 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(17);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -10509,14 +10748,39 @@ if(false) {
 }
 
 /***/ }),
-/* 23 */,
-/* 24 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(16);
+var content = __webpack_require__(18);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(2)("4c3c0f65", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-957098a4&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./SpriteSelectBox.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-957098a4&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./SpriteSelectBox.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 29 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(19);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -10536,7 +10800,7 @@ if(false) {
 }
 
 /***/ }),
-/* 25 */
+/* 30 */
 /***/ (function(module, exports) {
 
 /**
@@ -10569,7 +10833,7 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 26 */
+/* 31 */
 /***/ (function(module, exports) {
 
 var g;
@@ -10594,182 +10858,6 @@ try {
 
 module.exports = g;
 
-
-/***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
-
-
-/* styles */
-__webpack_require__(31)
-
-var Component = __webpack_require__(1)(
-  /* script */
-  __webpack_require__(28),
-  /* template */
-  __webpack_require__(30),
-  /* scopeId */
-  "data-v-5e13cd6d",
-  /* cssModules */
-  null
-)
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/BackgroundCover.vue"
-if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
-if (Component.options.functional) {console.error("[vue-loader] BackgroundCover.vue: functional components are not supported with templates, they should use render functions.")}
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-5e13cd6d", Component.options)
-  } else {
-    hotAPI.reload("data-v-5e13cd6d", Component.options)
-  }
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
-/* 28 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _eventBus = __webpack_require__(4);
-
-var _eventBus2 = _interopRequireDefault(_eventBus);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = {
-  data: function data() {
-    return {
-      isShow: false
-    };
-  },
-  created: function created() {
-    var _this = this;
-
-    _eventBus2.default.$on("spriteselected", function (sprte) {
-      _this.isShow = true;
-    });
-    _eventBus2.default.$on("spriteactionend", function () {
-      _this.isShow = false;
-    });
-  }
-}; //
-//
-//
-//
-
-/***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(0)();
-// imports
-
-
-// module
-exports.push([module.i, "\n.background-cover[data-v-5e13cd6d] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: block;\n}\n.background-cover.hide[data-v-5e13cd6d] {\n  display: none;\n}\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
-  return _c('div', {
-    staticClass: "background-cover",
-    class: {
-      hide: !_vm.isShow
-    }
-  })
-},staticRenderFns: []}
-module.exports.render._withStripped = true
-if (false) {
-  module.hot.accept()
-  if (module.hot.data) {
-     require("vue-hot-reload-api").rerender("data-v-5e13cd6d", module.exports)
-  }
-}
-
-/***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(29);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(2)("2a3ff2e8", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-5e13cd6d&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./BackgroundCover.vue", function() {
-     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-5e13cd6d&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./BackgroundCover.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 32 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(0)();
-// imports
-
-
-// module
-exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\n  position: relative;\n  z-index: 5;\n}\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 33 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(32);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(2)("4c3c0f65", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-957098a4&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./SpriteSelectBox.vue", function() {
-     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-957098a4&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./SpriteSelectBox.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
 
 /***/ })
 /******/ ]);

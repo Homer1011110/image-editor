@@ -5,21 +5,6 @@ import CircleSprite from "./CircleSprite.vue"
 import eventBus from "../base/eventBus"
 
 export default {
-  data: function() {
-    return {
-      isCreatingSprite: false,//is user dragging to create a sprite
-      isMovingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
-      isImgLoaded: false,
-      bgCanvasWidth: 300,
-      bgCanvasHeight: 300,
-      bgContext: null,
-      showDragLayer: false,//control the darglayer to show or hide
-      sprites: [],
-      activeSprite: null,
-      selectedSprite: null
-    }
-  },
   components: {
     "rect-sprite": Sprite,
     "circle-sprite": CircleSprite
@@ -67,6 +52,23 @@ export default {
       </section>
     )
   },
+  data: function() {
+    return {
+      isCreatingSprite: false,//is user dragging to create a sprite
+      isMovingSprite: false,
+      isResizingSprite: false,
+      sampleImgUrl: "http://localhost:8089/imgs/bg-3.jpg",
+      isImgLoaded: false,
+      bgCanvasWidth: 300,
+      bgCanvasHeight: 300,
+      bgContext: null,
+      showDragLayer: false,//control the darglayer to show or hide
+      sprites: [],
+      activeSprite: null,
+      activeSpriteOldState: null,
+      selectedSprite: null
+    }
+  },
   created: function() {
     let self = this
     let sampleImg = new Image()
@@ -98,9 +100,9 @@ export default {
       let sprite = {
         startX: offsetX,
         startY: offsetY,
-        mousedownX: offsetX,
-        mousedownY: offsetY,
-        x: offsetX,
+        mousedownX: offsetX,// coordinate of mousedown when create|move|resize
+        mousedownY: offsetY,//
+        x: offsetX,// coordinate of sprite
         y: offsetY,
         width: 0,
         height: 0,
@@ -125,18 +127,46 @@ export default {
         this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX)
         this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY)
       } else if(this.isMovingSprite){
-        this.activeSprite.x = this.activeSprite.startX + (offsetX - this.activeSprite.mousedownX)
-        this.activeSprite.y = this.activeSprite.startY + (offsetY - this.activeSprite.mousedownY)
+        this.activeSprite.x = this.activeSpriteOldState.x + (offsetX - this.activeSprite.mousedownX)
+        this.activeSprite.y = this.activeSpriteOldState.y + (offsetY - this.activeSprite.mousedownY)
+      } else if(this.isResizingSprite) {
+        let diffX = offsetX - this.activeSprite.mousedownX
+        let diffY = offsetY - this.activeSprite.mousedownY
+        switch (this.activeSprite.dragDot) {
+          case "left-top":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width)
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height)
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX)
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY)
+            break
+          case "right-top":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX)
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height)
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX)
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY)
+            break
+          case "right-bottom":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX)
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY)
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX)
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY)
+            break
+          case "left-bottom":
+            this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width)
+            this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY)
+            this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX)
+            this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY)
+            break
+        }
       }
     },
     mouseup: function({offsetX, offsetY, button}) {
       if(button != 0 || !this.showDragLayer) {
         return
       }
-      this.activeSprite.startX = this.activeSprite.x
-      this.activeSprite.startY = this.activeSprite.y
       this.isCreatingSprite = false
       this.isMovingSprite = false
+      this.isResizingSprite = false
       this.showDragLayer = false
       eventBus.$emit("spriteactionend")
     },
@@ -146,11 +176,40 @@ export default {
       }
       this.activeSprite.isActive = false
       this.activeSprite = this.sprites[index]
-      this.activeSprite.mousedownX = this.activeSprite.x + offsetX
-      this.activeSprite.mousedownY =  this.activeSprite.y + offsetY
       this.activeSprite.isActive = true
-      this.isMovingSprite = true
       this.showDragLayer = true
+      this.saveSpriteOldState()
+      if(/dragable/.test(target.className)) {
+        // NOTE: resize
+        console.log("mousedown fire in dragable")
+        if(/left-top/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX
+          this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY
+          this.activeSprite.dragDot = "left-top"
+        } else if(/right-top/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX
+          this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY
+          this.activeSprite.dragDot = "right-top"
+        } else if(/right-bottom/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX
+          this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY
+          this.activeSprite.dragDot = "right-bottom"
+        } else if(/left-bottom/.test(target.className)) {
+          this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX
+          this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY
+          this.activeSprite.dragDot = "left-bottom"
+        }
+        this.isResizingSprite = true
+      } else {
+        // NOTE: move
+        this.activeSprite.mousedownX = this.activeSprite.x + offsetX
+        this.activeSprite.mousedownY =  this.activeSprite.y + offsetY
+        this.isMovingSprite = true
+      }
+    },
+    saveSpriteOldState() {
+      let {x, y, width, height} = this.activeSprite
+      this.activeSpriteOldState = {x, y, width, height}
     },
     drawBackground: function(img) {
       this.bgContext.drawImage(img, 0, 0)
@@ -168,6 +227,7 @@ export default {
   position: relative;
   display: inline-block;
   z-index: 5;
+  overflow: hidden;
 }
 .bg-canvas {
   max-width: 800px;
