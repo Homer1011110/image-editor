@@ -9,7 +9,7 @@ export default {
     return {
       isCreatingSprite: false,//is user dragging to create a sprite
       isMovingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
+      sampleImgUrl: "http://localhost:8089/imgs/bg-2.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
       bgCanvasHeight: 300,
@@ -53,8 +53,8 @@ export default {
                     y: sprite.y,
                     isActive: sprite.isActive
                   },
-                  nativeOn: {
-                    mousedown: (e)=>{
+                  on: {
+                    spriteContentMousedown: (e)=>{
                       this.SpriteMouseDownHandler(index, e)
                     }
                   },

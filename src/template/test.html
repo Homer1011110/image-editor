@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>shadow dom test</title>
+    <style type="text/css">
+      .text {
+        color: red;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="text shadow-text">outer div</div>
+    <div id="host" class="text">shadow root host</div>
+    <script type="text/javascript">
+      var shadowRootHost = document.querySelector("#host")
+      var shadowRoot = shadowRootHost.attachShadow({mode: "open"})
+      shadowRoot.innerHTML = `
+        <div id="shadow-dom" class="text shadow-text">shadow content</div>
+        <style type="text/css">
+          .shadow-text {
+            color: yellow;
+            font-weight: bold;
+          }
+        </style>
+      `
+    </script>
+  </body>
+</html>

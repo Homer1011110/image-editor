@@ -22,9 +22,10 @@ const config = {
       },
       {
         test: /\.vue$/,
-        use: [
-          {loader: "vue-loader"}
-        ]
+        loader: "vue-loader",
+        options: {
+          transformToRequire: {img: ""}
+        }
       }
     ]
   },
