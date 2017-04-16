@@ -1,12 +1,7 @@
 <script>
 import Sprite from "./Sprite.vue"
 let CircleSprite = {
-  extends: Sprite,
-  computed: {
-    text: function() {
-      return "circle"
-    }
-  }
+  extends: Sprite
 }
 export default CircleSprite
 </script>
@@ -14,13 +9,25 @@ export default CircleSprite
 <style lang="css" scoped>
 .sprite {
   position: absolute;
-  background-color: rgba(248, 248, 77, 0.5);
+}
+.sprite-content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
+  background-color: rgba(248, 248, 77, 0.5);
+  font-size: 14px;
+  box-sizing: border-box;
 }
-.sprite.active {
-  border: 1px dotted black;
+.sprite.active .sprite-content {
+  border: 2px solid lightblue;
 }
-
+.sprite-content.unfill {
+  background-color: transparent !important;
+}
+/*
+  dragable
+*/
 .drag-dot {
   width: 10px;
   height: 10px;

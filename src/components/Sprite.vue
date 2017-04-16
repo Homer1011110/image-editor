@@ -3,16 +3,24 @@
     v-bind:style="{left: x+'px', top: y+'px', width: width+'px', height: height+'px'}"
     v-bind:class="{active: isActive}"
   >
-    <div class="sprite-content" v-on:mousedown.top="contentMousedownHandler"></div>
-    <sprite-option></sprite-option>
-    <div class="dragable drag-bar top"></div>
-    <div class="dragable drag-bar bottom"></div>
-    <div class="dragable drag-bar left"></div>
-    <div class="dragable drag-bar right"></div>
-    <div class="dragable drag-dot left-top"></div>
-    <div class="dragable drag-dot right-top"></div>
-    <div class="dragable drag-dot right-bottom"></div>
-    <div class="dragable drag-dot left-bottom"></div>
+    <div class="sprite-content"
+      v-bind:class="{unfill: !isFill}"
+      v-on:mousedown.top="contentMousedownHandler"
+    >
+      <div class="dragable drag-bar top"></div>
+      <div class="dragable drag-bar bottom"></div>
+      <div class="dragable drag-bar left"></div>
+      <div class="dragable drag-bar right"></div>
+      <div class="dragable drag-dot left-top"></div>
+      <div class="dragable drag-dot right-top"></div>
+      <div class="dragable drag-dot right-bottom"></div>
+      <div class="dragable drag-dot left-bottom"></div>
+    </div>
+    <sprite-option
+      v-on:fillChange="fillChangeHandler"
+      v-on:strokeChange="strokeChangeHandler"
+      v-show="isActive"
+    ></sprite-option>
   </div>
 </template>
 
@@ -26,7 +34,9 @@ let Sprite = {
   props: ["width", "height", "x", "y", "isActive"],
   data: function() {
     return {
-      color: "yello"
+      fillColor: "yello",
+      isFill: true,
+      isStroke: true
     }
   },
   // computed: {
@@ -35,6 +45,12 @@ let Sprite = {
   methods: {
     contentMousedownHandler: function(e) {
       this.$emit("spriteContentMousedown", e)
+    },
+    fillChangeHandler: function(isFill) {
+      this.isFill = isFill
+    },
+    strokeChangeHandler: function(isStroke) {
+
     }
   }
 }
@@ -44,7 +60,6 @@ export default Sprite
 <style lang="css" scoped>
 .sprite {
   position: absolute;
-  border: 2px dotted lightblue;
 }
 .sprite-content {
   position: absolute;
@@ -52,13 +67,23 @@ export default Sprite
   height: 100%;
   background-color: rgba(248, 248, 77, 0.5);
   font-size: 14px;
+  box-sizing: border-box;
 }
 .sprite.active .sprite-content {
-  border: 1px dotted black;
+  border: 2px solid lightblue;
+}
+.sprite-content.unfill {
+  background-color: transparent !important;
 }
 /*.drag-bar {
 
 }*/
+.dragable {
+  display: none;
+}
+.sprite.active .dragable {
+  display: block;
+}
 .drag-dot {
   width: 10px;
   height: 10px;

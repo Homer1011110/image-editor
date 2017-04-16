@@ -9,7 +9,7 @@ export default {
     return {
       isCreatingSprite: false,//is user dragging to create a sprite
       isMovingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-2.jpg",
+      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
       bgCanvasHeight: 300,
@@ -72,7 +72,7 @@ export default {
       isCreatingSprite: false,//is user dragging to create a sprite
       isMovingSprite: false,
       isResizingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-3.jpg",
+      sampleImgUrl: "http://localhost:8089/imgs/bg-2.jpg",
       isImgLoaded: false,
       bgCanvasWidth: 300,
       bgCanvasHeight: 300,
@@ -196,7 +196,6 @@ export default {
       this.saveSpriteOldState()
       if(/dragable/.test(target.className)) {
         // NOTE: resize
-        console.log("mousedown fire in dragable")
         if(/left-top/.test(target.className)) {
           this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX
           this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY

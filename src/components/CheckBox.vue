@@ -18,6 +18,7 @@ let CheckBox = {
   methods: {
     onclick: function() {
       this.checked = !this.checked
+      this.$emit("checkedChange", this.checked)
     }
   }
 }

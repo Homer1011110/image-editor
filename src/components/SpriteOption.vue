@@ -2,11 +2,17 @@
   <div class="sprite-option">
     <div class="option">
       <label>填充</label>
-      <checkbox initChecked="true"></checkbox>
+      <checkbox
+        initChecked="true"
+        v-on:checkedChange="fillChangeHandler"
+      ></checkbox>
     </div>
     <div class="option">
       <label>描边</label>
-      <checkbox initChecked="true"></checkbox>
+      <checkbox
+        initChecked="true"
+        v-on:checkedChange="strokeChangeHandler"
+      ></checkbox>
     </div>
   </div>
 </template>
@@ -25,8 +31,11 @@ let SpriteOption = {
     }
   },
   methods: {
-    onCheck: function(e) {
-      console.log("checkbox:", e)
+    fillChangeHandler: function(isChecked) {
+      this.$emit("fillChange", isChecked)
+    },
+    strokeChangeHandler: function(isChecked) {
+      this.$emit("strokeChange", isChecked)
     }
   }
 }
