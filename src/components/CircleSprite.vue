@@ -20,4 +20,29 @@ export default CircleSprite
 .sprite.active {
   border: 1px dotted black;
 }
+
+.drag-dot {
+  width: 10px;
+  height: 10px;
+  background-color: lightblue;
+  position: absolute;
+  border-radius: 50%;
+}
+.drag-dot.left-top {
+  left: -5px;
+  top: -5px;
+}
+.drag-dot.left-bottom {
+  left: -5px;
+  bottom: -5px;
+}
+.drag-dot.right-top {
+  right: -5px;
+  top: -5px;
+}
+.drag-dot.right-bottom {
+  right: -5px;
+  bottom: -5px;
+}
+
 </style>

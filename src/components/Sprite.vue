@@ -5,6 +5,14 @@
   >
     <div class="sprite-content" v-on:mousedown.top="contentMousedownHandler"></div>
     <sprite-option></sprite-option>
+    <div class="dragable drag-bar top"></div>
+    <div class="dragable drag-bar bottom"></div>
+    <div class="dragable drag-bar left"></div>
+    <div class="dragable drag-bar right"></div>
+    <div class="dragable drag-dot left-top"></div>
+    <div class="dragable drag-dot right-top"></div>
+    <div class="dragable drag-dot right-bottom"></div>
+    <div class="dragable drag-dot left-bottom"></div>
   </div>
 </template>
 
@@ -48,4 +56,31 @@ export default Sprite
 .sprite.active .sprite-content {
   border: 1px dotted black;
 }
+/*.drag-bar {
+
+}*/
+.drag-dot {
+  width: 10px;
+  height: 10px;
+  background-color: lightblue;
+  position: absolute;
+  border-radius: 50%;
+}
+.drag-dot.left-top {
+  left: -5px;
+  top: -5px;
+}
+.drag-dot.left-bottom {
+  left: -5px;
+  bottom: -5px;
+}
+.drag-dot.right-top {
+  right: -5px;
+  top: -5px;
+}
+.drag-dot.right-bottom {
+  right: -5px;
+  bottom: -5px;
+}
+
 </style>

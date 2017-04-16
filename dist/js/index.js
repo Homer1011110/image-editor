@@ -9894,6 +9894,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _data$components$rend;
+
 var _vue = __webpack_require__(3);
 
 var _vue2 = _interopRequireDefault(_vue);
@@ -9912,7 +9914,9 @@ var _eventBus2 = _interopRequireDefault(_eventBus);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = {
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+exports.default = (_data$components$rend = {
   data: function data() {
     return {
       isCreatingSprite: false, //is user dragging to create a sprite
@@ -9982,115 +9986,192 @@ exports.default = {
         })]
       )]
     );
-  },
-  created: function created() {
-    var self = this;
-    var sampleImg = new Image();
-    sampleImg.src = this.sampleImgUrl;
-    sampleImg.onload = function () {
-      self.isImgLoaded = true;
-      self.bgCanvasWidth = this.width;
-      self.bgCanvasHeight = this.height;
-      self.$nextTick(function () {
-        self.bgContext = self.$refs.bgCanvas.getContext("2d");
-        self.drawBackground(sampleImg);
-      });
-    };
-
-    _eventBus2.default.$on("spriteselected", function (sprite) {
-      self.selectedSprite = sprite;
-      self.showDragLayer = true;
-      if (self.activeSprite) {
-        self.activeSprite.isActive = false;
-      }
+  }
+}, _defineProperty(_data$components$rend, "data", function data() {
+  return {
+    isCreatingSprite: false, //is user dragging to create a sprite
+    isMovingSprite: false,
+    isResizingSprite: false,
+    sampleImgUrl: "http://localhost:8089/imgs/bg-3.jpg",
+    isImgLoaded: false,
+    bgCanvasWidth: 300,
+    bgCanvasHeight: 300,
+    bgContext: null,
+    showDragLayer: false, //control the darglayer to show or hide
+    sprites: [],
+    activeSprite: null,
+    activeSpriteOldState: null,
+    selectedSprite: null
+  };
+}), _defineProperty(_data$components$rend, "created", function created() {
+  var self = this;
+  var sampleImg = new Image();
+  sampleImg.src = this.sampleImgUrl;
+  sampleImg.onload = function () {
+    self.isImgLoaded = true;
+    self.bgCanvasWidth = this.width;
+    self.bgCanvasHeight = this.height;
+    self.$nextTick(function () {
+      self.bgContext = self.$refs.bgCanvas.getContext("2d");
+      self.drawBackground(sampleImg);
     });
+  };
+
+  _eventBus2.default.$on("spriteselected", function (sprite) {
+    self.selectedSprite = sprite;
+    self.showDragLayer = true;
+    if (self.activeSprite) {
+      self.activeSprite.isActive = false;
+    }
+  });
+}), _defineProperty(_data$components$rend, "methods", {
+  mousedown: function mousedown(_ref) {
+    var offsetX = _ref.offsetX,
+        offsetY = _ref.offsetY,
+        button = _ref.button;
+
+    if (button != 0 || !this.showDragLayer || !this.selectedSprite) {
+      return;
+    }
+    this.isCreatingSprite = true;
+    var sprite = {
+      startX: offsetX,
+      startY: offsetY,
+      mousedownX: offsetX, // coordinate of mousedown when create|move|resize
+      mousedownY: offsetY, //
+      x: offsetX, // coordinate of sprite
+      y: offsetY,
+      width: 0,
+      height: 0,
+      isActive: true,
+      isMoving: false
+    };
+    sprite.name = this.selectedSprite;
+    this.sprites.push(sprite);
+    this.activeSprite = sprite;
   },
-  methods: {
-    mousedown: function mousedown(_ref) {
-      var offsetX = _ref.offsetX,
-          offsetY = _ref.offsetY,
-          button = _ref.button;
+  mousemove: function mousemove(_ref2) {
+    var offsetX = _ref2.offsetX,
+        offsetY = _ref2.offsetY,
+        button = _ref2.button,
+        target = _ref2.target;
 
-      if (button != 0 || !this.showDragLayer || !this.selectedSprite) {
-        return;
+    if (button != 0 || !this.showDragLayer) {
+      return;
+    }
+    if (!this.activeSprite) {
+      console.warn("this.activeSprite is " + this.activeSprite);
+      return;
+    }
+    if (this.isCreatingSprite) {
+      this.activeSprite.x = Math.min(this.activeSprite.startX, offsetX);
+      this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY);
+      this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX);
+      this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY);
+    } else if (this.isMovingSprite) {
+      this.activeSprite.x = this.activeSpriteOldState.x + (offsetX - this.activeSprite.mousedownX);
+      this.activeSprite.y = this.activeSpriteOldState.y + (offsetY - this.activeSprite.mousedownY);
+    } else if (this.isResizingSprite) {
+      var diffX = offsetX - this.activeSprite.mousedownX;
+      var diffY = offsetY - this.activeSprite.mousedownY;
+      switch (this.activeSprite.dragDot) {
+        case "left-top":
+          this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width);
+          this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height);
+          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX);
+          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY);
+          break;
+        case "right-top":
+          this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX);
+          this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height);
+          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX);
+          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY);
+          break;
+        case "right-bottom":
+          this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX);
+          this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY);
+          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX);
+          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
+          break;
+        case "left-bottom":
+          this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width);
+          this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY);
+          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX);
+          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
+          break;
       }
-      this.isCreatingSprite = true;
-      var sprite = {
-        startX: offsetX,
-        startY: offsetY,
-        mousedownX: offsetX,
-        mousedownY: offsetY,
-        x: offsetX,
-        y: offsetY,
-        width: 0,
-        height: 0,
-        isActive: true,
-        isMoving: false
-      };
-      sprite.name = this.selectedSprite;
-      this.sprites.push(sprite);
-      this.activeSprite = sprite;
-    },
-    mousemove: function mousemove(_ref2) {
-      var offsetX = _ref2.offsetX,
-          offsetY = _ref2.offsetY,
-          button = _ref2.button,
-          target = _ref2.target;
+    }
+  },
+  mouseup: function mouseup(_ref3) {
+    var offsetX = _ref3.offsetX,
+        offsetY = _ref3.offsetY,
+        button = _ref3.button;
 
-      if (button != 0 || !this.showDragLayer) {
-        return;
-      }
-      if (!this.activeSprite) {
-        console.warn("this.activeSprite is " + this.activeSprite);
-        return;
-      }
-      if (this.isCreatingSprite) {
-        this.activeSprite.x = Math.min(this.activeSprite.startX, offsetX);
-        this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY);
-        this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX);
-        this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY);
-      } else if (this.isMovingSprite) {
-        this.activeSprite.x = this.activeSprite.startX + (offsetX - this.activeSprite.mousedownX);
-        this.activeSprite.y = this.activeSprite.startY + (offsetY - this.activeSprite.mousedownY);
-      }
-    },
-    mouseup: function mouseup(_ref3) {
-      var offsetX = _ref3.offsetX,
-          offsetY = _ref3.offsetY,
-          button = _ref3.button;
+    if (button != 0 || !this.showDragLayer) {
+      return;
+    }
+    this.isCreatingSprite = false;
+    this.isMovingSprite = false;
+    this.isResizingSprite = false;
+    this.showDragLayer = false;
+    _eventBus2.default.$emit("spriteactionend");
+  },
+  SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4) {
+    var button = _ref4.button,
+        offsetX = _ref4.offsetX,
+        offsetY = _ref4.offsetY,
+        target = _ref4.target;
 
-      if (button != 0 || !this.showDragLayer) {
-        return;
+    if (button != 0) {
+      return;
+    }
+    this.activeSprite.isActive = false;
+    this.activeSprite = this.sprites[index];
+    this.activeSprite.isActive = true;
+    this.showDragLayer = true;
+    this.saveSpriteOldState();
+    if (/dragable/.test(target.className)) {
+      // NOTE: resize
+      console.log("mousedown fire in dragable");
+      if (/left-top/.test(target.className)) {
+        this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
+        this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY;
+        this.activeSprite.dragDot = "left-top";
+      } else if (/right-top/.test(target.className)) {
+        this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX;
+        this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY;
+        this.activeSprite.dragDot = "right-top";
+      } else if (/right-bottom/.test(target.className)) {
+        this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX;
+        this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY;
+        this.activeSprite.dragDot = "right-bottom";
+      } else if (/left-bottom/.test(target.className)) {
+        this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
+        this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY;
+        this.activeSprite.dragDot = "left-bottom";
       }
-      this.activeSprite.startX = this.activeSprite.x;
-      this.activeSprite.startY = this.activeSprite.y;
-      this.isCreatingSprite = false;
-      this.isMovingSprite = false;
-      this.showDragLayer = false;
-      _eventBus2.default.$emit("spriteactionend");
-    },
-    SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4) {
-      var button = _ref4.button,
-          offsetX = _ref4.offsetX,
-          offsetY = _ref4.offsetY,
-          target = _ref4.target;
-
-      if (button != 0) {
-        return;
-      }
-      this.activeSprite.isActive = false;
-      this.activeSprite = this.sprites[index];
+      this.isResizingSprite = true;
+    } else {
+      // NOTE: move
       this.activeSprite.mousedownX = this.activeSprite.x + offsetX;
       this.activeSprite.mousedownY = this.activeSprite.y + offsetY;
-      this.activeSprite.isActive = true;
       this.isMovingSprite = true;
-      this.showDragLayer = true;
-    },
-    drawBackground: function drawBackground(img) {
-      this.bgContext.drawImage(img, 0, 0);
     }
+  },
+  saveSpriteOldState: function saveSpriteOldState() {
+    var _activeSprite = this.activeSprite,
+        x = _activeSprite.x,
+        y = _activeSprite.y,
+        width = _activeSprite.width,
+        height = _activeSprite.height;
+
+    this.activeSpriteOldState = { x: x, y: y, width: width, height: height };
+  },
+
+  drawBackground: function drawBackground(img) {
+    this.bgContext.drawImage(img, 0, 0);
   }
-};
+}), _data$components$rend);
 
 /***/ }),
 /* 13 */
@@ -10128,6 +10209,14 @@ var Sprite = {
     }
   }
 }; //
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -10236,7 +10325,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\r\n  text-align: center;\r\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\r\n  position: relative;\r\n  display: inline-block;\r\n  z-index: 5;\n}\n.bg-canvas[data-v-3dee5128] {\r\n  max-width: 800px;\r\n  min-width: 500px;\r\n  margin: 0 auto;\r\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  left: 0;\r\n  top: 0;\r\n  display: block;\r\n  z-index: 1;\r\n  background-color: rgba(248, 0, 0, 0.5);\n}\r\n", ""]);
+exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\r\n  text-align: center;\r\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\r\n  position: relative;\r\n  display: inline-block;\r\n  z-index: 5;\r\n  overflow: hidden;\n}\n.bg-canvas[data-v-3dee5128] {\r\n  max-width: 800px;\r\n  min-width: 500px;\r\n  margin: 0 auto;\r\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  left: 0;\r\n  top: 0;\r\n  display: block;\r\n  z-index: 1;\r\n  background-color: rgba(248, 0, 0, 0.5);\n}\r\n", ""]);
 
 // exports
 
@@ -10292,7 +10381,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite[data-v-75803321] {\r\n  position: absolute;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  border-radius: 50%;\n}\n.sprite.active[data-v-75803321] {\r\n  border: 1px dotted black;\n}\r\n", ""]);
+exports.push([module.i, "\n.sprite[data-v-75803321] {\r\n  position: absolute;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  border-radius: 50%;\n}\n.sprite.active[data-v-75803321] {\r\n  border: 1px dotted black;\n}\n.drag-dot[data-v-75803321] {\r\n  width: 10px;\r\n  height: 10px;\r\n  background-color: lightblue;\r\n  position: absolute;\r\n  border-radius: 50%;\n}\n.drag-dot.left-top[data-v-75803321] {\r\n  left: -5px;\r\n  top: -5px;\n}\n.drag-dot.left-bottom[data-v-75803321] {\r\n  left: -5px;\r\n  bottom: -5px;\n}\n.drag-dot.right-top[data-v-75803321] {\r\n  right: -5px;\r\n  top: -5px;\n}\n.drag-dot.right-bottom[data-v-75803321] {\r\n  right: -5px;\r\n  bottom: -5px;\n}\r\n\r\n", ""]);
 
 // exports
 
@@ -10320,7 +10409,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite[data-v-ddbd259e] {\r\n  position: absolute;\r\n  border: 2px dotted lightblue;\n}\n.sprite-content[data-v-ddbd259e] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  font-size: 14px;\n}\n.sprite.active .sprite-content[data-v-ddbd259e] {\r\n  border: 1px dotted black;\n}\r\n", ""]);
+exports.push([module.i, "\n.sprite[data-v-ddbd259e] {\r\n  position: absolute;\r\n  border: 2px dotted lightblue;\n}\n.sprite-content[data-v-ddbd259e] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  font-size: 14px;\n}\n.sprite.active .sprite-content[data-v-ddbd259e] {\r\n  border: 1px dotted black;\n}\r\n/*.drag-bar {\r\n\r\n}*/\n.drag-dot[data-v-ddbd259e] {\r\n  width: 10px;\r\n  height: 10px;\r\n  background-color: lightblue;\r\n  position: absolute;\r\n  border-radius: 50%;\n}\n.drag-dot.left-top[data-v-ddbd259e] {\r\n  left: -5px;\r\n  top: -5px;\n}\n.drag-dot.left-bottom[data-v-ddbd259e] {\r\n  left: -5px;\r\n  bottom: -5px;\n}\n.drag-dot.right-top[data-v-ddbd259e] {\r\n  right: -5px;\r\n  top: -5px;\n}\n.drag-dot.right-bottom[data-v-ddbd259e] {\r\n  right: -5px;\r\n  bottom: -5px;\n}\r\n\r\n", ""]);
 
 // exports
 
@@ -10772,7 +10861,23 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
         _vm.contentMousedownHandler($event)
       }
     }
-  }), _vm._v(" "), _c('sprite-option')], 1)
+  }), _vm._v(" "), _c('sprite-option'), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar top"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar bottom"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar left"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-bar right"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot left-top"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot right-top"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot right-bottom"
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable drag-dot left-bottom"
+  })], 1)
 },staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {
