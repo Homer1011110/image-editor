@@ -51,11 +51,12 @@ export default {
                     height: sprite.height,
                     x: sprite.x,
                     y: sprite.y,
-                    isActive: sprite.isActive
+                    isActive: sprite.isActive,
+                    name: sprite.name
                   },
                   on: {
-                    spriteContentMousedown: (e)=>{
-                      this.SpriteMouseDownHandler(index, e)
+                    spriteContentMousedown: (e, borderWidth)=>{
+                      this.SpriteMouseDownHandler(index, e, borderWidth)
                     }
                   },
                   ref: `sprite-${index}`
@@ -185,7 +186,7 @@ export default {
       this.showDragLayer = false
       eventBus.$emit("spriteactionend")
     },
-    SpriteMouseDownHandler: function(index, {button, offsetX, offsetY, target}) {
+    SpriteMouseDownHandler: function(index, {button, offsetX, offsetY, target}, borderWidth) {
       if(button != 0) {
         return
       }
@@ -216,8 +217,8 @@ export default {
         this.isResizingSprite = true
       } else {
         // NOTE: move
-        this.activeSprite.mousedownX = this.activeSprite.x + offsetX
-        this.activeSprite.mousedownY =  this.activeSprite.y + offsetY
+        this.activeSprite.mousedownX = this.activeSprite.x + offsetX + borderWidth
+        this.activeSprite.mousedownY =  this.activeSprite.y + offsetY + borderWidth
         this.isMovingSprite = true
       }
     },
@@ -234,13 +235,12 @@ export default {
 
 <style lang="css" scoped>
 .canvas-section {
-  text-align: center;
   font-size: 0;
 }
 .bg-canvas-wrapper {
   position: relative;
   display: inline-block;
-  z-index: 5;
+  z-index: 10;
   overflow: hidden;
 }
 .bg-canvas {
@@ -256,7 +256,7 @@ export default {
   left: 0;
   top: 0;
   display: block;
-  z-index: 1;
+  z-index: 10;
   background-color: rgba(248, 0, 0, 0.5);
 }
 </style>

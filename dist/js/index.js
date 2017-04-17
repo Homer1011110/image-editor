@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 41);
+/******/ 	return __webpack_require__(__webpack_require__.s = 16);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -195,7 +195,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(39)
+var listToStyles = __webpack_require__(40)
 
 /*
 type StyleObject = {
@@ -285,27 +285,6 @@ function addStylesToDom (styles /* Array<StyleObject> */) {
   }
 }
 
-function listToStyles (parentId, list) {
-  var styles = []
-  var newStyles = {}
-  for (var i = 0; i < list.length; i++) {
-    var item = list[i]
-    var id = item[0]
-    var css = item[1]
-    var media = item[2]
-    var sourceMap = item[3]
-    var part = { css: css, media: media, sourceMap: sourceMap }
-    if (!newStyles[id]) {
-      part.id = parentId + ':0'
-      styles.push(newStyles[id] = { id: id, parts: [part] })
-    } else {
-      part.id = parentId + ':' + newStyles[id].parts.length
-      newStyles[id].parts.push(part)
-    }
-  }
-  return styles
-}
-
 function createStyleElement () {
   var styleElement = document.createElement('style')
   styleElement.type = 'text/css'
@@ -316,12 +295,20 @@ function createStyleElement () {
 function addStyle (obj /* StyleObjectPart */) {
   var update, remove
   var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
-  var hasSSR = styleElement != null
 
-  // if in production mode and style is already provided by SSR,
-  // simply do nothing.
-  if (hasSSR && isProduction) {
-    return noop
+  if (styleElement) {
+    if (isProduction) {
+      // has SSR styles and in production mode.
+      // simply do nothing.
+      return noop
+    } else {
+      // has SSR styles but in dev mode.
+      // for some reason Chrome can't handle source map in server-rendered
+      // style tags - source maps in <style> only works if the style tag is
+      // created and inserted dynamically. So we remove the server rendered
+      // styles and inject new ones.
+      styleElement.parentNode.removeChild(styleElement)
+    }
   }
 
   if (isOldIE) {
@@ -332,16 +319,14 @@ function addStyle (obj /* StyleObjectPart */) {
     remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
   } else {
     // use multi-style-tag mode in all other cases
-    styleElement = styleElement || createStyleElement()
+    styleElement = createStyleElement()
     update = applyToTag.bind(null, styleElement)
     remove = function () {
       styleElement.parentNode.removeChild(styleElement)
     }
   }
 
-  if (!hasSSR) {
-    update(obj)
-  }
+  update(obj)
 
   return function updateStyle (newObj /* StyleObjectPart */) {
     if (newObj) {
@@ -417,7 +402,7 @@ function applyToTag (styleElement, obj) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(process, global) {/*!
- * Vue.js v2.2.2
+ * Vue.js v2.2.4
  * (c) 2014-2017 Evan You
  * Released under the MIT License.
  */
@@ -695,7 +680,7 @@ var config = {
   /**
    * Whether to record perf
    */
-  performance: process.env.NODE_ENV !== 'production',
+  performance: false,
 
   /**
    * Error handler for watcher errors
@@ -770,6 +755,48 @@ var config = {
    */
   _maxUpdateCount: 100
 };
+
+/*  */
+
+var emptyObject = Object.freeze({});
+
+/**
+ * Check if a string starts with $ or _
+ */
+function isReserved (str) {
+  var c = (str + '').charCodeAt(0);
+  return c === 0x24 || c === 0x5F
+}
+
+/**
+ * Define a property.
+ */
+function def (obj, key, val, enumerable) {
+  Object.defineProperty(obj, key, {
+    value: val,
+    enumerable: !!enumerable,
+    writable: true,
+    configurable: true
+  });
+}
+
+/**
+ * Parse simple path.
+ */
+var bailRE = /[^\w.$]/;
+function parsePath (path) {
+  if (bailRE.test(path)) {
+    return
+  }
+  var segments = path.split('.');
+  return function (obj) {
+    for (var i = 0; i < segments.length; i++) {
+      if (!obj) { return }
+      obj = obj[segments[i]];
+    }
+    return obj
+  }
+}
 
 /*  */
 /* globals MutationObserver */
@@ -920,57 +947,6 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
   }());
 }
 
-var perf;
-
-if (process.env.NODE_ENV !== 'production') {
-  perf = inBrowser && window.performance;
-  if (perf && (!perf.mark || !perf.measure)) {
-    perf = undefined;
-  }
-}
-
-/*  */
-
-var emptyObject = Object.freeze({});
-
-/**
- * Check if a string starts with $ or _
- */
-function isReserved (str) {
-  var c = (str + '').charCodeAt(0);
-  return c === 0x24 || c === 0x5F
-}
-
-/**
- * Define a property.
- */
-function def (obj, key, val, enumerable) {
-  Object.defineProperty(obj, key, {
-    value: val,
-    enumerable: !!enumerable,
-    writable: true,
-    configurable: true
-  });
-}
-
-/**
- * Parse simple path.
- */
-var bailRE = /[^\w.$]/;
-function parsePath (path) {
-  if (bailRE.test(path)) {
-    return
-  }
-  var segments = path.split('.');
-  return function (obj) {
-    for (var i = 0; i < segments.length; i++) {
-      if (!obj) { return }
-      obj = obj[segments[i]];
-    }
-    return obj
-  }
-}
-
 var warn = noop;
 var tip = noop;
 var formatComponentName;
@@ -1002,9 +978,11 @@ if (process.env.NODE_ENV !== 'production') {
     if (vm.$root === vm) {
       return '<Root>'
     }
-    var name = vm._isVue
-      ? vm.$options.name || vm.$options._componentTag
-      : vm.name;
+    var name = typeof vm === 'function' && vm.options
+      ? vm.options.name
+      : vm._isVue
+        ? vm.$options.name || vm.$options._componentTag
+        : vm.name;
 
     var file = vm._isVue && vm.$options.__file;
     if (!name && file) {
@@ -1950,6 +1928,29 @@ if (process.env.NODE_ENV !== 'production') {
   };
 }
 
+var mark;
+var measure;
+
+if (process.env.NODE_ENV !== 'production') {
+  var perf = inBrowser && window.performance;
+  /* istanbul ignore if */
+  if (
+    perf &&
+    perf.mark &&
+    perf.measure &&
+    perf.clearMarks &&
+    perf.clearMeasures
+  ) {
+    mark = function (tag) { return perf.mark(tag); };
+    measure = function (name, startTag, endTag) {
+      perf.measure(name, startTag, endTag);
+      perf.clearMarks(startTag);
+      perf.clearMarks(endTag);
+      perf.clearMeasures(name);
+    };
+  }
+}
+
 /*  */
 
 var VNode = function VNode (
@@ -2521,19 +2522,22 @@ function mountComponent (
 
   var updateComponent;
   /* istanbul ignore if */
-  if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+  if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = function () {
       var name = vm._name;
-      var startTag = "start " + name;
-      var endTag = "end " + name;
-      perf.mark(startTag);
+      var id = vm._uid;
+      var startTag = "vue-perf-start:" + id;
+      var endTag = "vue-perf-end:" + id;
+
+      mark(startTag);
       var vnode = vm._render();
-      perf.mark(endTag);
-      perf.measure((name + " render"), startTag, endTag);
-      perf.mark(startTag);
+      mark(endTag);
+      measure((name + " render"), startTag, endTag);
+
+      mark(startTag);
       vm._update(vnode, hydrating);
-      perf.mark(endTag);
-      perf.measure((name + " patch"), startTag, endTag);
+      mark(endTag);
+      measure((name + " patch"), startTag, endTag);
     };
   } else {
     updateComponent = function () {
@@ -3275,8 +3279,63 @@ function stateMixin (Vue) {
 
 /*  */
 
-var hooks = { init: init, prepatch: prepatch, insert: insert, destroy: destroy };
-var hooksToMerge = Object.keys(hooks);
+// hooks to be invoked on component VNodes during patch
+var componentVNodeHooks = {
+  init: function init (
+    vnode,
+    hydrating,
+    parentElm,
+    refElm
+  ) {
+    if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
+      var child = vnode.componentInstance = createComponentInstanceForVnode(
+        vnode,
+        activeInstance,
+        parentElm,
+        refElm
+      );
+      child.$mount(hydrating ? vnode.elm : undefined, hydrating);
+    } else if (vnode.data.keepAlive) {
+      // kept-alive components, treat as a patch
+      var mountedNode = vnode; // work around flow
+      componentVNodeHooks.prepatch(mountedNode, mountedNode);
+    }
+  },
+
+  prepatch: function prepatch (oldVnode, vnode) {
+    var options = vnode.componentOptions;
+    var child = vnode.componentInstance = oldVnode.componentInstance;
+    updateChildComponent(
+      child,
+      options.propsData, // updated props
+      options.listeners, // updated listeners
+      vnode, // new parent vnode
+      options.children // new children
+    );
+  },
+
+  insert: function insert (vnode) {
+    if (!vnode.componentInstance._isMounted) {
+      vnode.componentInstance._isMounted = true;
+      callHook(vnode.componentInstance, 'mounted');
+    }
+    if (vnode.data.keepAlive) {
+      activateChildComponent(vnode.componentInstance, true /* direct */);
+    }
+  },
+
+  destroy: function destroy (vnode) {
+    if (!vnode.componentInstance._isDestroyed) {
+      if (!vnode.data.keepAlive) {
+        vnode.componentInstance.$destroy();
+      } else {
+        deactivateChildComponent(vnode.componentInstance, true /* direct */);
+      }
+    }
+  }
+};
+
+var hooksToMerge = Object.keys(componentVNodeHooks);
 
 function createComponent (
   Ctor,
@@ -3424,62 +3483,6 @@ function createComponentInstanceForVnode (
   return new vnodeComponentOptions.Ctor(options)
 }
 
-function init (
-  vnode,
-  hydrating,
-  parentElm,
-  refElm
-) {
-  if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
-    var child = vnode.componentInstance = createComponentInstanceForVnode(
-      vnode,
-      activeInstance,
-      parentElm,
-      refElm
-    );
-    child.$mount(hydrating ? vnode.elm : undefined, hydrating);
-  } else if (vnode.data.keepAlive) {
-    // kept-alive components, treat as a patch
-    var mountedNode = vnode; // work around flow
-    prepatch(mountedNode, mountedNode);
-  }
-}
-
-function prepatch (
-  oldVnode,
-  vnode
-) {
-  var options = vnode.componentOptions;
-  var child = vnode.componentInstance = oldVnode.componentInstance;
-  updateChildComponent(
-    child,
-    options.propsData, // updated props
-    options.listeners, // updated listeners
-    vnode, // new parent vnode
-    options.children // new children
-  );
-}
-
-function insert (vnode) {
-  if (!vnode.componentInstance._isMounted) {
-    vnode.componentInstance._isMounted = true;
-    callHook(vnode.componentInstance, 'mounted');
-  }
-  if (vnode.data.keepAlive) {
-    activateChildComponent(vnode.componentInstance, true /* direct */);
-  }
-}
-
-function destroy (vnode) {
-  if (!vnode.componentInstance._isDestroyed) {
-    if (!vnode.data.keepAlive) {
-      vnode.componentInstance.$destroy();
-    } else {
-      deactivateChildComponent(vnode.componentInstance, true /* direct */);
-    }
-  }
-}
-
 function resolveAsyncComponent (
   factory,
   baseCtor,
@@ -3543,6 +3546,21 @@ function extractProps (data, Ctor) {
   if (attrs || props || domProps) {
     for (var key in propOptions) {
       var altKey = hyphenate(key);
+      if (process.env.NODE_ENV !== 'production') {
+        var keyInLowerCase = key.toLowerCase();
+        if (
+          key !== keyInLowerCase &&
+          attrs && attrs.hasOwnProperty(keyInLowerCase)
+        ) {
+          warn(
+            "Prop \"" + keyInLowerCase + "\" is not declared in component " +
+            (formatComponentName(Ctor)) + ". Note that HTML attributes are " +
+            "case-insensitive and camelCased props need to use their kebab-case " +
+            "equivalents when using in-DOM templates. You should probably use " +
+            "\"" + altKey + "\" instead of \"" + key + "\"."
+          );
+        }
+      }
       checkProp(res, props, key, altKey, true) ||
       checkProp(res, attrs, key, altKey) ||
       checkProp(res, domProps, key, altKey);
@@ -3583,7 +3601,7 @@ function mergeHooks (data) {
   for (var i = 0; i < hooksToMerge.length; i++) {
     var key = hooksToMerge[i];
     var fromParent = data.hook[key];
-    var ours = hooks[key];
+    var ours = componentVNodeHooks[key];
     data.hook[key] = fromParent ? mergeHook$1(ours, fromParent) : ours;
   }
 }
@@ -3825,14 +3843,17 @@ function bindObjectProps (
       if (Array.isArray(value)) {
         value = toObject(value);
       }
+      var hash;
       for (var key in value) {
         if (key === 'class' || key === 'style') {
-          data[key] = value[key];
+          hash = data;
         } else {
           var type = data.attrs && data.attrs.type;
-          var hash = asProp || config.mustUseProp(tag, type, key)
+          hash = asProp || config.mustUseProp(tag, type, key)
             ? data.domProps || (data.domProps = {})
             : data.attrs || (data.attrs = {});
+        }
+        if (!(key in hash)) {
           hash[key] = value[key];
         }
       }
@@ -4044,8 +4065,8 @@ var uid = 0;
 function initMixin (Vue) {
   Vue.prototype._init = function (options) {
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
-      perf.mark('init');
+    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+      mark('vue-perf-init');
     }
 
     var vm = this;
@@ -4084,10 +4105,10 @@ function initMixin (Vue) {
     callHook(vm, 'created');
 
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       vm._name = formatComponentName(vm, false);
-      perf.mark('init end');
-      perf.measure(((vm._name) + " init"), 'init', 'init end');
+      mark('vue-perf-init-end');
+      measure(((vm._name) + " init"), 'vue-perf-init', 'vue-perf-init-end');
     }
 
     if (vm.$options.el) {
@@ -4499,7 +4520,7 @@ Object.defineProperty(Vue$3.prototype, '$isServer', {
   get: isServerRendering
 });
 
-Vue$3.version = '2.2.2';
+Vue$3.version = '2.2.4';
 
 /*  */
 
@@ -4837,7 +4858,7 @@ function registerRef (vnode, isRemoval) {
 
 var emptyNode = new VNode('', {}, []);
 
-var hooks$1 = ['create', 'activate', 'update', 'remove', 'destroy'];
+var hooks = ['create', 'activate', 'update', 'remove', 'destroy'];
 
 function isUndef (s) {
   return s == null
@@ -4873,10 +4894,10 @@ function createPatchFunction (backend) {
   var modules = backend.modules;
   var nodeOps = backend.nodeOps;
 
-  for (i = 0; i < hooks$1.length; ++i) {
-    cbs[hooks$1[i]] = [];
+  for (i = 0; i < hooks.length; ++i) {
+    cbs[hooks[i]] = [];
     for (j = 0; j < modules.length; ++j) {
-      if (modules[j][hooks$1[i]] !== undefined) { cbs[hooks$1[i]].push(modules[j][hooks$1[i]]); }
+      if (modules[j][hooks[i]] !== undefined) { cbs[hooks[i]].push(modules[j][hooks[i]]); }
     }
   }
 
@@ -7677,7 +7698,7 @@ var IS_REGEX_CAPTURING_BROKEN = false;
 });
 
 // Special Elements (can contain anything)
-var isScriptOrStyle = makeMap('script,style', true);
+var isPlainTextElement = makeMap('script,style,textarea', true);
 var reCache = {};
 
 var decodingMap = {
@@ -7703,8 +7724,8 @@ function parseHTML (html, options) {
   var last, lastTag;
   while (html) {
     last = html;
-    // Make sure we're not in a script or style element
-    if (!lastTag || !isScriptOrStyle(lastTag)) {
+    // Make sure we're not in a plaintext content element like script/style
+    if (!lastTag || !isPlainTextElement(lastTag)) {
       var textEnd = html.indexOf('<');
       if (textEnd === 0) {
         // Comment:
@@ -7784,7 +7805,7 @@ function parseHTML (html, options) {
       var endTagLength = 0;
       var rest = html.replace(reStackedTag, function (all, text, endTag) {
         endTagLength = endTag.length;
-        if (stackedTag !== 'script' && stackedTag !== 'style' && stackedTag !== 'noscript') {
+        if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
           text = text
             .replace(/<!--([\s\S]*?)-->/g, '$1')
             .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1');
@@ -7979,25 +8000,26 @@ function parseText (
 
 /*  */
 
-var dirRE = /^v-|^@|^:/;
 var onRE = /^@|^v-on:/;
+var dirRE = /^v-|^@|^:/;
 var forAliasRE = /(.*?)\s+(?:in|of)\s+(.*)/;
 var forIteratorRE = /\((\{[^}]*\}|[^,]*),([^,]*)(?:,([^,]*))?\)/;
-var bindRE = /^:|^v-bind:/;
+
 var argRE = /:(.*)$/;
+var bindRE = /^:|^v-bind:/;
 var modifierRE = /\.[^.]+/g;
 
 var decodeHTMLCached = cached(decode);
 
 // configurable state
 var warn$2;
-var platformGetTagNamespace;
-var platformMustUseProp;
-var platformIsPreTag;
-var preTransforms;
-var transforms;
-var postTransforms;
 var delimiters;
+var transforms;
+var preTransforms;
+var postTransforms;
+var platformIsPreTag;
+var platformMustUseProp;
+var platformGetTagNamespace;
 
 /**
  * Convert HTML string to AST.
@@ -8022,6 +8044,13 @@ function parse (
   var inVPre = false;
   var inPre = false;
   var warned = false;
+
+  function warnOnce (msg) {
+    if (!warned) {
+      warned = true;
+      warn$2(msg);
+    }
+  }
 
   function endPre (element) {
     // check pre state
@@ -8106,17 +8135,15 @@ function parse (
       }
 
       function checkRootConstraints (el) {
-        if (process.env.NODE_ENV !== 'production' && !warned) {
+        if (process.env.NODE_ENV !== 'production') {
           if (el.tag === 'slot' || el.tag === 'template') {
-            warned = true;
-            warn$2(
+            warnOnce(
               "Cannot use <" + (el.tag) + "> as component root element because it may " +
               'contain multiple nodes.'
             );
           }
           if (el.attrsMap.hasOwnProperty('v-for')) {
-            warned = true;
-            warn$2(
+            warnOnce(
               'Cannot use v-for on stateful component root element because ' +
               'it renders multiple elements.'
             );
@@ -8136,9 +8163,8 @@ function parse (
             exp: element.elseif,
             block: element
           });
-        } else if (process.env.NODE_ENV !== 'production' && !warned) {
-          warned = true;
-          warn$2(
+        } else if (process.env.NODE_ENV !== 'production') {
+          warnOnce(
             "Component template should contain exactly one root element. " +
             "If you are using v-if on multiple elements, " +
             "use v-else-if to chain them instead."
@@ -8183,11 +8209,16 @@ function parse (
 
     chars: function chars (text) {
       if (!currentParent) {
-        if (process.env.NODE_ENV !== 'production' && !warned && text === template) {
-          warned = true;
-          warn$2(
-            'Component template requires a root element, rather than just text.'
-          );
+        if (process.env.NODE_ENV !== 'production') {
+          if (text === template) {
+            warnOnce(
+              'Component template requires a root element, rather than just text.'
+            );
+          } else if ((text = text.trim())) {
+            warnOnce(
+              ("text \"" + text + "\" outside root element will be ignored.")
+            );
+          }
         }
         return
       }
@@ -8386,7 +8417,7 @@ function processComponent (el) {
 
 function processAttrs (el) {
   var list = el.attrsList;
-  var i, l, name, rawName, value, arg, modifiers, isProp;
+  var i, l, name, rawName, value, modifiers, isProp;
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name;
     value = list[i].value;
@@ -8424,7 +8455,8 @@ function processAttrs (el) {
         name = name.replace(dirRE, '');
         // parse arg
         var argMatch = name.match(argRE);
-        if (argMatch && (arg = argMatch[1])) {
+        var arg = argMatch && argMatch[1];
+        if (arg) {
           name = name.slice(0, -(arg.length + 1));
         }
         addDirective(el, name, rawName, value, arg, modifiers);
@@ -8710,10 +8742,11 @@ function genHandler (
       : ("function($event){" + (handler.value) + "}") // inline statement
   } else {
     var code = '';
+    var genModifierCode = '';
     var keys = [];
     for (var key in handler.modifiers) {
       if (modifierCode[key]) {
-        code += modifierCode[key];
+        genModifierCode += modifierCode[key];
         // left/right
         if (keyCodes[key]) {
           keys.push(key);
@@ -8724,6 +8757,10 @@ function genHandler (
     }
     if (keys.length) {
       code += genKeyFilter(keys);
+    }
+    // Make sure modifiers like prevent and stop get executed after key filtering
+    if (genModifierCode) {
+      code += genModifierCode;
     }
     var handlerCode = isMethodPath
       ? handler.value + '($event)'
@@ -9569,8 +9606,8 @@ Vue$3.prototype.$mount = function (
     }
     if (template) {
       /* istanbul ignore if */
-      if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
-        perf.mark('compile');
+      if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+        mark('compile');
       }
 
       var ref = compileToFunctions(template, {
@@ -9583,9 +9620,9 @@ Vue$3.prototype.$mount = function (
       options.staticRenderFns = staticRenderFns;
 
       /* istanbul ignore if */
-      if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
-        perf.mark('compile end');
-        perf.measure(((this._name) + " compile"), 'compile', 'compile end');
+      if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+        mark('compile end');
+        measure(((this._name) + " compile"), 'compile', 'compile end');
       }
     }
   }
@@ -9610,7 +9647,7 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(23), __webpack_require__(40)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(24), __webpack_require__(41)))
 
 /***/ }),
 /* 4 */
@@ -9638,19 +9675,19 @@ exports.default = eventBus;
 
 
 /* styles */
-__webpack_require__(38)
+__webpack_require__(43)
 
 var Component = __webpack_require__(1)(
   /* script */
   __webpack_require__(13),
   /* template */
-  __webpack_require__(31),
+  __webpack_require__(32),
   /* scopeId */
-  "data-v-ddbd259e",
+  null,
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\Sprite.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/Sprite.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] Sprite.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -9676,19 +9713,19 @@ module.exports = Component.exports
 
 
 /* styles */
-__webpack_require__(34)
+__webpack_require__(35)
 
 var Component = __webpack_require__(1)(
   /* script */
   __webpack_require__(9),
   /* template */
-  __webpack_require__(28),
+  __webpack_require__(29),
   /* scopeId */
   "data-v-5e13cd6d",
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\BackgroundCover.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/BackgroundCover.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] BackgroundCover.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -9714,7 +9751,7 @@ module.exports = Component.exports
 
 
 /* styles */
-__webpack_require__(32)
+__webpack_require__(33)
 
 var Component = __webpack_require__(1)(
   /* script */
@@ -9726,7 +9763,7 @@ var Component = __webpack_require__(1)(
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\ImageEditor.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/ImageEditor.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 
 /* hot reload */
@@ -9751,19 +9788,19 @@ module.exports = Component.exports
 
 
 /* styles */
-__webpack_require__(37)
+__webpack_require__(38)
 
 var Component = __webpack_require__(1)(
   /* script */
   __webpack_require__(15),
   /* template */
-  __webpack_require__(30),
+  __webpack_require__(31),
   /* scopeId */
   "data-v-957098a4",
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\SpriteSelectBox.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/SpriteSelectBox.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] SpriteSelectBox.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -9900,7 +9937,7 @@ var _Sprite = __webpack_require__(5);
 
 var _Sprite2 = _interopRequireDefault(_Sprite);
 
-var _CircleSprite = __webpack_require__(25);
+var _CircleSprite = __webpack_require__(26);
 
 var _CircleSprite2 = _interopRequireDefault(_CircleSprite);
 
@@ -9970,11 +10007,12 @@ exports.default = (_data$components$rend = {
               height: sprite.height,
               x: sprite.x,
               y: sprite.y,
-              isActive: sprite.isActive
+              isActive: sprite.isActive,
+              name: sprite.name
             },
             on: {
-              spriteContentMousedown: function spriteContentMousedown(e) {
-                _this.SpriteMouseDownHandler(index, e);
+              spriteContentMousedown: function spriteContentMousedown(e, borderWidth) {
+                _this.SpriteMouseDownHandler(index, e, borderWidth);
               }
             },
             ref: "sprite-" + index
@@ -10112,7 +10150,7 @@ exports.default = (_data$components$rend = {
     this.showDragLayer = false;
     _eventBus2.default.$emit("spriteactionend");
   },
-  SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4) {
+  SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4, borderWidth) {
     var button = _ref4.button,
         offsetX = _ref4.offsetX,
         offsetY = _ref4.offsetY,
@@ -10148,8 +10186,8 @@ exports.default = (_data$components$rend = {
       this.isResizingSprite = true;
     } else {
       // NOTE: move
-      this.activeSprite.mousedownX = this.activeSprite.x + offsetX;
-      this.activeSprite.mousedownY = this.activeSprite.y + offsetY;
+      this.activeSprite.mousedownX = this.activeSprite.x + offsetX + borderWidth;
+      this.activeSprite.mousedownY = this.activeSprite.y + offsetY + borderWidth;
       this.isMovingSprite = true;
     }
   },
@@ -10179,7 +10217,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _SpriteOption = __webpack_require__(26);
+var _SpriteOption = __webpack_require__(27);
 
 var _SpriteOption2 = _interopRequireDefault(_SpriteOption);
 
@@ -10189,12 +10227,13 @@ var Sprite = {
   components: {
     "sprite-option": _SpriteOption2.default
   },
-  props: ["width", "height", "x", "y", "isActive"],
+  props: ["width", "height", "x", "y", "isActive", "name"],
   data: function data() {
     return {
-      fillColor: "yello",
+      fillColor: "yellow",
       isFill: true,
-      isStroke: true
+      isStroke: true,
+      borderWidth: 1
     };
   },
   // computed: {
@@ -10202,6 +10241,9 @@ var Sprite = {
   // }
   methods: {
     contentMousedownHandler: function contentMousedownHandler(e) {
+      this.$emit("spriteContentMousedown", e, this.borderWidth);
+    },
+    dragableMousedownHandler: function dragableMousedownHandler(e) {
       this.$emit("spriteContentMousedown", e);
     },
     fillChangeHandler: function fillChangeHandler(isFill) {
@@ -10210,6 +10252,9 @@ var Sprite = {
     strokeChangeHandler: function strokeChangeHandler(isStroke) {}
   }
 }; //
+//
+//
+//
 //
 //
 //
@@ -10249,7 +10294,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _CheckBox = __webpack_require__(24);
+var _CheckBox = __webpack_require__(25);
 
 var _CheckBox2 = _interopRequireDefault(_CheckBox);
 
@@ -10338,15 +10383,41 @@ exports.default = SpriteSelectBox;
 /* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(0)();
-// imports
+"use strict";
 
 
-// module
-exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\r\n  text-align: center;\r\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\r\n  position: relative;\r\n  display: inline-block;\r\n  z-index: 5;\r\n  overflow: hidden;\n}\n.bg-canvas[data-v-3dee5128] {\r\n  max-width: 800px;\r\n  min-width: 500px;\r\n  margin: 0 auto;\r\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  left: 0;\r\n  top: 0;\r\n  display: block;\r\n  z-index: 1;\r\n  background-color: rgba(248, 0, 0, 0.5);\n}\r\n", ""]);
+var _vue = __webpack_require__(3);
 
-// exports
+var _vue2 = _interopRequireDefault(_vue);
 
+var _ImageEditor = __webpack_require__(7);
+
+var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
+
+var _SpriteSelectBox = __webpack_require__(8);
+
+var _SpriteSelectBox2 = _interopRequireDefault(_SpriteSelectBox);
+
+var _BackgroundCover = __webpack_require__(6);
+
+var _BackgroundCover2 = _interopRequireDefault(_BackgroundCover);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var app = new _vue2.default({
+  el: "#ie-container",
+  data: {},
+  components: {
+    "image-editor": _ImageEditor2.default,
+    "sprite-select-box": _SpriteSelectBox2.default,
+    "background-cover": _BackgroundCover2.default
+  }
+});
+// print rect
+// ctx.lineWidth = 10
+// ctx.lineCap = "butt | round | square"
+// ctx.lineJoin=  "round | bevel | miter"
+// let bgImg = document.querySelector("#bg-img")
 
 /***/ }),
 /* 17 */
@@ -10357,7 +10428,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.checkbox[data-v-57682a0f] {\r\n  display: inline-block;\n}\n.pic[data-v-57682a0f]{\r\n  width: 30px;\r\n  vertical-align: middle;\n}\r\n", ""]);
+exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n  z-index: 10;\n  overflow: hidden;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: block;\n  z-index: 10;\n  background-color: rgba(248, 0, 0, 0.5);\n}\n", ""]);
 
 // exports
 
@@ -10371,7 +10442,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.background-cover[data-v-5e13cd6d] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: block;\n}\n.background-cover.hide[data-v-5e13cd6d] {\n  display: none;\n}\n", ""]);
+exports.push([module.i, "\n.checkbox[data-v-57682a0f] {\n  display: inline-block;\n}\n.pic[data-v-57682a0f]{\n  width: 30px;\n  vertical-align: middle;\n}\n", ""]);
 
 // exports
 
@@ -10385,7 +10456,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite-option[data-v-625f0ef4] {\r\n  position: absolute;\r\n  top: -80px;\r\n  left: 50%;\r\n  transform: translateX(-50%);\r\n  width: 200px;\r\n  line-height: 30px;\r\n  background-color: white;\r\n  border: 1px solid #222;\r\n  border-radius: 4px;\r\n  font-size: 14px;\n}\n.option[data-v-625f0ef4] {\r\n  display: inline;\n}\r\n", ""]);
+exports.push([module.i, "\n.background-cover[data-v-5e13cd6d] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: block;\n}\n.background-cover.hide[data-v-5e13cd6d] {\n  display: none;\n}\n", ""]);
 
 // exports
 
@@ -10399,7 +10470,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite[data-v-75803321] {\r\n  position: absolute;\n}\n.sprite-content[data-v-75803321] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  border-radius: 50%;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  font-size: 14px;\r\n  box-sizing: border-box;\n}\n.sprite.active .sprite-content[data-v-75803321] {\r\n  border: 2px solid lightblue;\n}\n.sprite-content.unfill[data-v-75803321] {\r\n  background-color: transparent !important;\n}\r\n/*\r\n  dragable\r\n*/\n.drag-dot[data-v-75803321] {\r\n  width: 10px;\r\n  height: 10px;\r\n  background-color: lightblue;\r\n  position: absolute;\r\n  border-radius: 50%;\n}\n.drag-dot.left-top[data-v-75803321] {\r\n  left: -5px;\r\n  top: -5px;\n}\n.drag-dot.left-bottom[data-v-75803321] {\r\n  left: -5px;\r\n  bottom: -5px;\n}\n.drag-dot.right-top[data-v-75803321] {\r\n  right: -5px;\r\n  top: -5px;\n}\n.drag-dot.right-bottom[data-v-75803321] {\r\n  right: -5px;\r\n  bottom: -5px;\n}\r\n\r\n", ""]);
+exports.push([module.i, "\n.sprite-option[data-v-625f0ef4] {\n  position: absolute;\n  top: -80px;\n  left: 50%;\n  transform: translateX(-50%);\n  width: 200px;\n  line-height: 30px;\n  background-color: white;\n  border: 1px solid #222;\n  border-radius: 4px;\n  font-size: 14px;\n}\n.option[data-v-625f0ef4] {\n  display: inline;\n}\n.option label[data-v-625f0ef4] {\n  vertical-align: middle;\n}\n", ""]);
 
 // exports
 
@@ -10413,7 +10484,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\r\n  position: relative;\r\n  z-index: 5;\n}\r\n", ""]);
+exports.push([module.i, "\n.circle-sprite .sprite-content[data-v-75803321] {\n  border-radius: 50%;\n}\n", ""]);
 
 // exports
 
@@ -10427,13 +10498,14 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite[data-v-ddbd259e] {\r\n  position: absolute;\n}\n.sprite-content[data-v-ddbd259e] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  font-size: 14px;\r\n  box-sizing: border-box;\n}\n.sprite.active .sprite-content[data-v-ddbd259e] {\r\n  border: 2px solid lightblue;\n}\n.sprite-content.unfill[data-v-ddbd259e] {\r\n  background-color: transparent !important;\n}\r\n/*.drag-bar {\r\n\r\n}*/\n.dragable[data-v-ddbd259e] {\r\n  display: none;\n}\n.sprite.active .dragable[data-v-ddbd259e] {\r\n  display: block;\n}\n.drag-dot[data-v-ddbd259e] {\r\n  width: 10px;\r\n  height: 10px;\r\n  background-color: lightblue;\r\n  position: absolute;\r\n  border-radius: 50%;\n}\n.drag-dot.left-top[data-v-ddbd259e] {\r\n  left: -5px;\r\n  top: -5px;\n}\n.drag-dot.left-bottom[data-v-ddbd259e] {\r\n  left: -5px;\r\n  bottom: -5px;\n}\n.drag-dot.right-top[data-v-ddbd259e] {\r\n  right: -5px;\r\n  top: -5px;\n}\n.drag-dot.right-bottom[data-v-ddbd259e] {\r\n  right: -5px;\r\n  bottom: -5px;\n}\r\n\r\n", ""]);
+exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\n  position: relative;\n  z-index: 5;\n}\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 23 */
+/* 23 */,
+/* 24 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -10619,24 +10691,24 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(33)
+__webpack_require__(34)
 
 var Component = __webpack_require__(1)(
   /* script */
   __webpack_require__(10),
   /* template */
-  __webpack_require__(27),
+  __webpack_require__(28),
   /* scopeId */
   "data-v-57682a0f",
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\CheckBox.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/CheckBox.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] CheckBox.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -10657,12 +10729,12 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(36)
+__webpack_require__(37)
 
 var Component = __webpack_require__(1)(
   /* script */
@@ -10674,7 +10746,7 @@ var Component = __webpack_require__(1)(
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\CircleSprite.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/CircleSprite.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 
 /* hot reload */
@@ -10694,24 +10766,24 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(35)
+__webpack_require__(36)
 
 var Component = __webpack_require__(1)(
   /* script */
   __webpack_require__(14),
   /* template */
-  __webpack_require__(29),
+  __webpack_require__(30),
   /* scopeId */
   "data-v-625f0ef4",
   /* cssModules */
   null
 )
-Component.options.__file = "E:\\git\\image-editor\\src\\components\\SpriteOption.vue"
+Component.options.__file = "/home/totti/workspace/image-editor/src/components/SpriteOption.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] SpriteOption.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -10732,7 +10804,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10774,7 +10846,7 @@ if (false) {
 }
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10794,7 +10866,7 @@ if (false) {
 }
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10829,7 +10901,7 @@ if (false) {
 }
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10862,15 +10934,15 @@ if (false) {
 }
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
   return _c('div', {
     staticClass: "sprite",
-    class: {
+    class: [{
       active: _vm.isActive
-    },
+    }, _vm.name],
     style: ({
       left: _vm.x + 'px',
       top: _vm.y + 'px',
@@ -10882,11 +10954,19 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     class: {
       unfill: !_vm.isFill
     },
+    style: ({
+      border: _vm.borderWidth + 'px solid lightblue'
+    }),
     on: {
       "mousedown": function($event) {
         if (!('button' in $event) && _vm._k($event.keyCode, "top")) { return null; }
         _vm.contentMousedownHandler($event)
       }
+    }
+  }), _vm._v(" "), _c('div', {
+    staticClass: "dragable-wrapper",
+    on: {
+      "mousedown": _vm.dragableMousedownHandler
     }
   }, [_c('div', {
     staticClass: "dragable drag-bar top"
@@ -10926,13 +11006,13 @@ if (false) {
 }
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(16);
+var content = __webpack_require__(17);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -10952,13 +11032,13 @@ if(false) {
 }
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(17);
+var content = __webpack_require__(18);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -10978,13 +11058,13 @@ if(false) {
 }
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(18);
+var content = __webpack_require__(19);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11004,13 +11084,13 @@ if(false) {
 }
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(19);
+var content = __webpack_require__(20);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11030,13 +11110,13 @@ if(false) {
 }
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(20);
+var content = __webpack_require__(21);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11056,13 +11136,13 @@ if(false) {
 }
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(21);
+var content = __webpack_require__(22);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11082,33 +11162,8 @@ if(false) {
 }
 
 /***/ }),
-/* 38 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(22);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(2)("0469728a", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue", function() {
-     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e&scoped=true!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 39 */
+/* 39 */,
+/* 40 */
 /***/ (function(module, exports) {
 
 /**
@@ -11141,7 +11196,7 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports) {
 
 var g;
@@ -11168,44 +11223,44 @@ module.exports = g;
 
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+exports = module.exports = __webpack_require__(0)();
+// imports
 
 
-var _vue = __webpack_require__(3);
+// module
+exports.push([module.i, "\n.sprite {\n  position: absolute;\n  z-index: 5;\n}\n.sprite-content {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(248, 248, 77, 0.5);\n  font-size: 14px;\n  box-sizing: border-box;\n  z-index: 10;\n  overflow: hidden;\n}\n/*.sprite.active .sprite-content {\n  border: 10px solid lightblue;\n}*/\n.sprite-content.unfill {\n  background-color: transparent !important;\n}\n/*.drag-bar {\n\n}*/\n.dragable-wrapper {\n  width: 100%;\n  height: 100%;\n  position: absolute;\n  z-index: 5;\n  top: 0;\n  left: 0;\n}\n.dragable {\n  display: none;\n}\n.sprite.active .dragable {\n  display: block;\n}\n.drag-dot {\n  width: 10px;\n  height: 10px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n}\n.drag-dot.left-top {\n  left: -5px;\n  top: -5px;\n}\n.drag-dot.left-bottom {\n  left: -5px;\n  bottom: -5px;\n}\n.drag-dot.right-top {\n  right: -5px;\n  top: -5px;\n}\n.drag-dot.right-bottom {\n  right: -5px;\n  bottom: -5px;\n}\n\n", ""]);
 
-var _vue2 = _interopRequireDefault(_vue);
+// exports
 
-var _ImageEditor = __webpack_require__(7);
 
-var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
+/***/ }),
+/* 43 */
+/***/ (function(module, exports, __webpack_require__) {
 
-var _SpriteSelectBox = __webpack_require__(8);
+// style-loader: Adds some css to the DOM by adding a <style> tag
 
-var _SpriteSelectBox2 = _interopRequireDefault(_SpriteSelectBox);
-
-var _BackgroundCover = __webpack_require__(6);
-
-var _BackgroundCover2 = _interopRequireDefault(_BackgroundCover);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var app = new _vue2.default({
-  el: "#ie-container",
-  data: {},
-  components: {
-    "image-editor": _ImageEditor2.default,
-    "sprite-select-box": _SpriteSelectBox2.default,
-    "background-cover": _BackgroundCover2.default
-  }
-});
-// print rect
-// ctx.lineWidth = 10
-// ctx.lineCap = "butt | round | square"
-// ctx.lineJoin=  "round | bevel | miter"
-// let bgImg = document.querySelector("#bg-img")
+// load the styles
+var content = __webpack_require__(42);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(2)("5e0323b5", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
 
 /***/ })
 /******/ ]);

@@ -58,4 +58,7 @@ export default SpriteOption
 .option {
   display: inline;
 }
+.option label {
+  vertical-align: middle;
+}
 </style>
