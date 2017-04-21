@@ -221,6 +221,7 @@ export default {
       if(button != 0) {
         return
       }
+      let sin = Math.sin, cos = Math.cos
       this.activeSprite.isActive = false
       this.activeSprite = this.sprites[index]
       this.activeSprite.isActive = true
@@ -250,8 +251,17 @@ export default {
         // NOTE: rotate
       } else {
         // NOTE: move
-        this.activeSprite.mousedownX = this.activeSprite.x + offsetX + borderWidth
-        this.activeSprite.mousedownY =  this.activeSprite.y + offsetY + borderWidth
+        let angle = this.activeSprite.rotateAngle
+        let rx = this.activeSprite.x + this.activeSprite.width / 2
+        let ry = this.activeSprite.y + this.activeSprite.height / 2
+        let x0 = this.activeSprite.x + this.activeSprite.width / 2 - this.activeSprite.contentWidth / 2 + offsetX + borderWidth
+        let y0 = this.activeSprite.y + this.activeSprite.height / 2 - this.activeSprite.contentHeight / 2 + offsetY + borderWidth
+        let x1 = rx - (rx - x0) * cos(angle) + (ry - y0) * sin(angle)
+        let y1 = ry - (rx - x0) * sin(angle) - (ry - y0) * cos(angle)
+        this.activeSprite.mousedownX = x1
+        this.activeSprite.mousedownY = y1
+        console.log("mousedownX:", this.activeSprite.mousedownX)
+        console.log("mousedownY: ", this.activeSprite.mousedownY)
         this.isMovingSprite = true
       }
     },
@@ -266,15 +276,13 @@ export default {
         radians = angle / 180 * Math.PI
         w = this.activeSprite.contentWidth * cos(radians) + this.activeSprite.contentHeight * sin(radians)
         h = this.activeSprite.contentWidth * sin(radians) + this.activeSprite.contentHeight * cos(radians)
-        // w = (this.height * sin(radians) - this.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
-        // h = (this.width * sin(radians) - this.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
       } else {
         radians = (angle - 90) / 180 * Math.PI
         w = this.activeSprite.contentHeight * cos(radians) + this.activeSprite.contentWidth * sin(radians)
         h = this.activeSprite.contentHeight * sin(radians) + this.activeSprite.contentWidth * cos(radians)
-        // w = (this.width * sin(radians) - this.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
-        // h = (this.height * sin(radians) - this.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
       }
+      this.activeSprite.x = this.activeSprite.x + this.activeSprite.width / 2 - w / 2
+      this.activeSprite.y = this.activeSprite.y + this.activeSprite.height / 2 - h / 2
       this.activeSprite.width = w
       this.activeSprite.height = h
     },

@@ -151,5 +151,15 @@ export default Sprite
   right: -5px;
   bottom: -5px;
 }
-
+.center {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  margin-top: -3px;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  background-color: red;
+}
 </style>

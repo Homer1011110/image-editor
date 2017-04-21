@@ -62,7 +62,7 @@ export default SpriteOption
   top: -80px;
   left: 50%;
   transform: translateX(-50%);
-  width: 260px;
+  width: 300px;
   line-height: 30px;
   background-color: white;
   border: 1px solid #222;
