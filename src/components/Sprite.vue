@@ -4,24 +4,33 @@
     v-bind:class="[{active: isActive}, name]"
   >
     <div class="sprite-content"
-      v-bind:style="{border: borderWidth + 'px solid lightblue'}"
+      v-bind:style="{
+        border: borderWidth + 'px solid lightblue',
+        transform: 'rotate(' + rotateAngle + 'deg)',
+        width: contentWidth + 'px',
+        height: contentHeight + 'px',
+        marginLeft: '-' + contentWidth/2 + 'px',
+        marginTop: '-' + contentHeight/2 + 'px'
+      }"
       v-bind:class="{unfill: !isFill}"
       v-on:mousedown.top="contentMousedownHandler"
     >
     </div>
     <div class="dragable-wrapper" v-on:mousedown="dragableMousedownHandler">
-      <div class="dragable drag-bar top"></div>
-      <div class="dragable drag-bar bottom"></div>
-      <div class="dragable drag-bar left"></div>
-      <div class="dragable drag-bar right"></div>
-      <div class="dragable drag-dot left-top"></div>
-      <div class="dragable drag-dot right-top"></div>
-      <div class="dragable drag-dot right-bottom"></div>
-      <div class="dragable drag-dot left-bottom"></div>
+      <div class="dragable resize drag-bar top"></div>
+      <div class="dragable resize drag-bar bottom"></div>
+      <div class="dragable resize drag-bar left"></div>
+      <div class="dragable resize drag-bar right"></div>
+      <div class="dragable resize drag-dot left-top"></div>
+      <div class="dragable resize drag-dot right-top"></div>
+      <div class="dragable resize drag-dot right-bottom"></div>
+      <div class="dragable resize drag-dot left-bottom"></div>
+      <!-- <div class="dragable rotate"></div> -->
     </div>
     <sprite-option
       v-on:fillChange="fillChangeHandler"
       v-on:strokeChange="strokeChangeHandler"
+      v-on:rotate="rotateHandler"
       v-show="isActive"
     ></sprite-option>
   </div>
@@ -34,18 +43,19 @@ let Sprite = {
   components: {
     "sprite-option": SpriteOption
   },
-  props: ["width", "height", "x", "y", "isActive", "name"],
+  props: ["width", "height", "x", "y", "isActive", "name", "contentWidth", "contentHeight"],
   data: function() {
     return {
       fillColor: "yellow",
       isFill: true,
       isStroke: true,
-      borderWidth: 1
+      borderWidth: 0,
+      rotateAngle: 0
     }
   },
-  // computed: {
-  //
-  // }
+  computed: {
+
+  },
   methods: {
     contentMousedownHandler: function(e) {
       this.$emit("spriteContentMousedown", e, this.borderWidth)
@@ -55,6 +65,11 @@ let Sprite = {
     },
     fillChangeHandler: function(isFill) {
       this.isFill = isFill
+    },
+    rotateHandler: function(angle) {
+      angle = parseInt(angle)
+      this.rotateAngle = angle
+      this.$emit("spriteRotate", angle)
     },
     strokeChangeHandler: function(isStroke) {
 
@@ -68,11 +83,12 @@ export default Sprite
 .sprite {
   position: absolute;
   z-index: 5;
+  border: 1px solid lightblue;
 }
 .sprite-content {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  left: 50%;
+  top: 50%;
   background-color: rgba(248, 248, 77, 0.5);
   font-size: 14px;
   box-sizing: border-box;
@@ -102,6 +118,16 @@ export default Sprite
 .sprite.active .dragable {
   display: block;
 }
+/*.dragable.rotate {
+  width: 20px;
+  height: 20px;
+  background-color: lightblue;
+  position: absolute;
+  border-radius: 50%;
+  left: 50%;
+  margin-left: -10px;
+  bottom: -40px;
+}*/
 .drag-dot {
   width: 10px;
   height: 10px;

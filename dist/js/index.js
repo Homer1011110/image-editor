@@ -9675,7 +9675,7 @@ exports.default = eventBus;
 
 
 /* styles */
-__webpack_require__(43)
+__webpack_require__(39)
 
 var Component = __webpack_require__(1)(
   /* script */
@@ -10008,11 +10008,16 @@ exports.default = (_data$components$rend = {
               x: sprite.x,
               y: sprite.y,
               isActive: sprite.isActive,
-              name: sprite.name
+              name: sprite.name,
+              contentWidth: sprite.contentWidth,
+              contentHeight: sprite.contentHeight
             },
             on: {
               spriteContentMousedown: function spriteContentMousedown(e, borderWidth) {
                 _this.SpriteMouseDownHandler(index, e, borderWidth);
+              },
+              spriteRotate: function spriteRotate(angle) {
+                _this.spriteRotateHandler(angle);
               }
             },
             ref: "sprite-" + index
@@ -10075,8 +10080,13 @@ exports.default = (_data$components$rend = {
       mousedownY: offsetY, //
       x: offsetX, // coordinate of sprite
       y: offsetY,
+      centerX: offsetX,
+      centerY: offsetY,
       width: 0,
       height: 0,
+      contentWidth: 0,
+      contentHeight: 0,
+      rotateAngle: 0, // radius
       isActive: true,
       isMoving: false
     };
@@ -10102,6 +10112,8 @@ exports.default = (_data$components$rend = {
       this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY);
       this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX);
       this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY);
+      this.activeSprite.contentWidth = this.activeSprite.width;
+      this.activeSprite.contentHeight = this.activeSprite.height;
     } else if (this.isMovingSprite) {
       this.activeSprite.x = this.activeSpriteOldState.x + (offsetX - this.activeSprite.mousedownX);
       this.activeSprite.y = this.activeSpriteOldState.y + (offsetY - this.activeSprite.mousedownY);
@@ -10134,7 +10146,29 @@ exports.default = (_data$components$rend = {
           this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
           break;
       }
+      var angle = this.activeSprite.rotateAngle;
+      var radians = void 0,
+          w = void 0,
+          h = void 0;
+      var sin = Math.sin,
+          cos = Math.cos;
+      if (angle >= 180) {
+        angle -= 180;
+      }
+      if (angle < 90) {
+        radians = angle / 180 * Math.PI;
+        w = (this.activeSprite.height * sin(radians) - this.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+        h = (this.activeSprite.width * sin(radians) - this.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+      } else {
+        radians = (angle - 90) / 180 * Math.PI;
+        w = (this.activeSprite.width * sin(radians) - this.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+        h = (this.activeSprite.height * sin(radians) - this.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+      }
+      this.activeSprite.contentWidth = w;
+      this.activeSprite.contentHeight = h;
     }
+    this.activeSprite.centerX = this.activeSprite.x + this.activeSprite.width / 2;
+    this.activeSprite.centerY = this.activeSprite.y + this.activeSprite.height / 2;
   },
   mouseup: function mouseup(_ref3) {
     var offsetX = _ref3.offsetX,
@@ -10164,7 +10198,7 @@ exports.default = (_data$components$rend = {
     this.activeSprite.isActive = true;
     this.showDragLayer = true;
     this.saveSpriteOldState();
-    if (/dragable/.test(target.className)) {
+    if (/resize/.test(target.className)) {
       // NOTE: resize
       if (/left-top/.test(target.className)) {
         this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
@@ -10184,12 +10218,40 @@ exports.default = (_data$components$rend = {
         this.activeSprite.dragDot = "left-bottom";
       }
       this.isResizingSprite = true;
+    } else if (/rotate/.test(target.className)) {
+      // NOTE: rotate
     } else {
       // NOTE: move
       this.activeSprite.mousedownX = this.activeSprite.x + offsetX + borderWidth;
       this.activeSprite.mousedownY = this.activeSprite.y + offsetY + borderWidth;
       this.isMovingSprite = true;
     }
+  },
+  spriteRotateHandler: function spriteRotateHandler(angle) {
+    this.activeSprite.rotateAngle = angle;
+    var radians = void 0,
+        w = void 0,
+        h = void 0;
+    var sin = Math.sin,
+        cos = Math.cos;
+    if (angle >= 180) {
+      angle -= 180;
+    }
+    if (angle < 90) {
+      radians = angle / 180 * Math.PI;
+      w = this.activeSprite.contentWidth * cos(radians) + this.activeSprite.contentHeight * sin(radians);
+      h = this.activeSprite.contentWidth * sin(radians) + this.activeSprite.contentHeight * cos(radians);
+      // w = (this.height * sin(radians) - this.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+      // h = (this.width * sin(radians) - this.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+    } else {
+      radians = (angle - 90) / 180 * Math.PI;
+      w = this.activeSprite.contentHeight * cos(radians) + this.activeSprite.contentWidth * sin(radians);
+      h = this.activeSprite.contentHeight * sin(radians) + this.activeSprite.contentWidth * cos(radians);
+      // w = (this.width * sin(radians) - this.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+      // h = (this.height * sin(radians) - this.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+    }
+    this.activeSprite.width = w;
+    this.activeSprite.height = h;
   },
   saveSpriteOldState: function saveSpriteOldState() {
     var _activeSprite = this.activeSprite,
@@ -10227,18 +10289,17 @@ var Sprite = {
   components: {
     "sprite-option": _SpriteOption2.default
   },
-  props: ["width", "height", "x", "y", "isActive", "name"],
+  props: ["width", "height", "x", "y", "isActive", "name", "contentWidth", "contentHeight"],
   data: function data() {
     return {
       fillColor: "yellow",
       isFill: true,
       isStroke: true,
-      borderWidth: 1
+      borderWidth: 0,
+      rotateAngle: 0
     };
   },
-  // computed: {
-  //
-  // }
+  computed: {},
   methods: {
     contentMousedownHandler: function contentMousedownHandler(e) {
       this.$emit("spriteContentMousedown", e, this.borderWidth);
@@ -10249,9 +10310,23 @@ var Sprite = {
     fillChangeHandler: function fillChangeHandler(isFill) {
       this.isFill = isFill;
     },
+    rotateHandler: function rotateHandler(angle) {
+      angle = parseInt(angle);
+      this.rotateAngle = angle;
+      this.$emit("spriteRotate", angle);
+    },
     strokeChangeHandler: function strokeChangeHandler(isStroke) {}
   }
 }; //
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -10307,7 +10382,8 @@ var SpriteOption = {
   data: function data() {
     return {
       isFill: true,
-      isStroke: true
+      isStroke: true,
+      angle: 0
     };
   },
   methods: {
@@ -10316,9 +10392,22 @@ var SpriteOption = {
     },
     strokeChangeHandler: function strokeChangeHandler(isChecked) {
       this.$emit("strokeChange", isChecked);
+    },
+    rotateHandler: function rotateHandler(e) {
+      this.$emit("rotate", this.angle);
     }
   }
 }; //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -10470,7 +10559,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite-option[data-v-625f0ef4] {\n  position: absolute;\n  top: -80px;\n  left: 50%;\n  transform: translateX(-50%);\n  width: 200px;\n  line-height: 30px;\n  background-color: white;\n  border: 1px solid #222;\n  border-radius: 4px;\n  font-size: 14px;\n}\n.option[data-v-625f0ef4] {\n  display: inline;\n}\n.option label[data-v-625f0ef4] {\n  vertical-align: middle;\n}\n", ""]);
+exports.push([module.i, "\n.sprite-option[data-v-625f0ef4] {\n  position: absolute;\n  top: -80px;\n  left: 50%;\n  transform: translateX(-50%);\n  width: 260px;\n  line-height: 30px;\n  background-color: white;\n  border: 1px solid #222;\n  border-radius: 4px;\n  font-size: 14px;\n}\n.option[data-v-625f0ef4] {\n  display: inline;\n}\n.option label[data-v-625f0ef4] {\n  vertical-align: middle;\n}\n", ""]);
 
 // exports
 
@@ -10504,7 +10593,20 @@ exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\n  position: re
 
 
 /***/ }),
-/* 23 */,
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.sprite {\n  position: absolute;\n  z-index: 5;\n  border: 1px solid lightblue;\n}\n.sprite-content {\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  background-color: rgba(248, 248, 77, 0.5);\n  font-size: 14px;\n  box-sizing: border-box;\n  z-index: 10;\n  overflow: hidden;\n}\n/*.sprite.active .sprite-content {\n  border: 10px solid lightblue;\n}*/\n.sprite-content.unfill {\n  background-color: transparent !important;\n}\n/*.drag-bar {\n\n}*/\n.dragable-wrapper {\n  width: 100%;\n  height: 100%;\n  position: absolute;\n  z-index: 5;\n  top: 0;\n  left: 0;\n}\n.dragable {\n  display: none;\n}\n.sprite.active .dragable {\n  display: block;\n}\n/*.dragable.rotate {\n  width: 20px;\n  height: 20px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n  left: 50%;\n  margin-left: -10px;\n  bottom: -40px;\n}*/\n.drag-dot {\n  width: 10px;\n  height: 10px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n}\n.drag-dot.left-top {\n  left: -5px;\n  top: -5px;\n}\n.drag-dot.left-bottom {\n  left: -5px;\n  bottom: -5px;\n}\n.drag-dot.right-top {\n  right: -5px;\n  top: -5px;\n}\n.drag-dot.right-bottom {\n  right: -5px;\n  bottom: -5px;\n}\n\n", ""]);
+
+// exports
+
+
+/***/ }),
 /* 24 */
 /***/ (function(module, exports) {
 
@@ -10890,7 +10992,33 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     on: {
       "checkedChange": _vm.strokeChangeHandler
     }
-  })], 1)])
+  })], 1), _vm._v(" "), _c('div', {
+    staticClass: "option"
+  }, [_c('label', [_vm._v("旋转角度")]), _vm._v(" "), _c('input', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.angle),
+      expression: "angle"
+    }],
+    attrs: {
+      "type": "number",
+      "max": "360",
+      "min": "0"
+    },
+    domProps: {
+      "value": (_vm.angle)
+    },
+    on: {
+      "input": [function($event) {
+        if ($event.target.composing) { return; }
+        _vm.angle = $event.target.value
+      }, _vm.rotateHandler],
+      "blur": function($event) {
+        _vm.$forceUpdate()
+      }
+    }
+  })])])
 },staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {
@@ -10955,7 +11083,12 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       unfill: !_vm.isFill
     },
     style: ({
-      border: _vm.borderWidth + 'px solid lightblue'
+      border: _vm.borderWidth + 'px solid lightblue',
+      transform: 'rotate(' + _vm.rotateAngle + 'deg)',
+      width: _vm.contentWidth + 'px',
+      height: _vm.contentHeight + 'px',
+      marginLeft: '-' + _vm.contentWidth / 2 + 'px',
+      marginTop: '-' + _vm.contentHeight / 2 + 'px'
     }),
     on: {
       "mousedown": function($event) {
@@ -10969,21 +11102,21 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       "mousedown": _vm.dragableMousedownHandler
     }
   }, [_c('div', {
-    staticClass: "dragable drag-bar top"
+    staticClass: "dragable resize drag-bar top"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-bar bottom"
+    staticClass: "dragable resize drag-bar bottom"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-bar left"
+    staticClass: "dragable resize drag-bar left"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-bar right"
+    staticClass: "dragable resize drag-bar right"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-dot left-top"
+    staticClass: "dragable resize drag-dot left-top"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-dot right-top"
+    staticClass: "dragable resize drag-dot right-top"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-dot right-bottom"
+    staticClass: "dragable resize drag-dot right-bottom"
   }), _vm._v(" "), _c('div', {
-    staticClass: "dragable drag-dot left-bottom"
+    staticClass: "dragable resize drag-dot left-bottom"
   })]), _vm._v(" "), _c('sprite-option', {
     directives: [{
       name: "show",
@@ -10993,7 +11126,8 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     }],
     on: {
       "fillChange": _vm.fillChangeHandler,
-      "strokeChange": _vm.strokeChangeHandler
+      "strokeChange": _vm.strokeChangeHandler,
+      "rotate": _vm.rotateHandler
     }
   })], 1)
 },staticRenderFns: []}
@@ -11162,7 +11296,32 @@ if(false) {
 }
 
 /***/ }),
-/* 39 */,
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(23);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(2)("5e0323b5", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue", function() {
+     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
 /* 40 */
 /***/ (function(module, exports) {
 
@@ -11221,46 +11380,6 @@ try {
 
 module.exports = g;
 
-
-/***/ }),
-/* 42 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(0)();
-// imports
-
-
-// module
-exports.push([module.i, "\n.sprite {\n  position: absolute;\n  z-index: 5;\n}\n.sprite-content {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(248, 248, 77, 0.5);\n  font-size: 14px;\n  box-sizing: border-box;\n  z-index: 10;\n  overflow: hidden;\n}\n/*.sprite.active .sprite-content {\n  border: 10px solid lightblue;\n}*/\n.sprite-content.unfill {\n  background-color: transparent !important;\n}\n/*.drag-bar {\n\n}*/\n.dragable-wrapper {\n  width: 100%;\n  height: 100%;\n  position: absolute;\n  z-index: 5;\n  top: 0;\n  left: 0;\n}\n.dragable {\n  display: none;\n}\n.sprite.active .dragable {\n  display: block;\n}\n.drag-dot {\n  width: 10px;\n  height: 10px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n}\n.drag-dot.left-top {\n  left: -5px;\n  top: -5px;\n}\n.drag-dot.left-bottom {\n  left: -5px;\n  bottom: -5px;\n}\n.drag-dot.right-top {\n  right: -5px;\n  top: -5px;\n}\n.drag-dot.right-bottom {\n  right: -5px;\n  bottom: -5px;\n}\n\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 43 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(42);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(2)("5e0323b5", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue", function() {
-     var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ddbd259e!../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Sprite.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
 
 /***/ })
 /******/ ]);

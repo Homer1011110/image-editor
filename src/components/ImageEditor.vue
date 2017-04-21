@@ -52,11 +52,16 @@ export default {
                     x: sprite.x,
                     y: sprite.y,
                     isActive: sprite.isActive,
-                    name: sprite.name
+                    name: sprite.name,
+                    contentWidth: sprite.contentWidth,
+                    contentHeight: sprite.contentHeight
                   },
                   on: {
                     spriteContentMousedown: (e, borderWidth)=>{
                       this.SpriteMouseDownHandler(index, e, borderWidth)
+                    },
+                    spriteRotate: (angle)=>{
+                      this.spriteRotateHandler(angle)
                     }
                   },
                   ref: `sprite-${index}`
@@ -120,8 +125,13 @@ export default {
         mousedownY: offsetY,//
         x: offsetX,// coordinate of sprite
         y: offsetY,
+        centerX: offsetX,
+        centerY: offsetY,
         width: 0,
         height: 0,
+        contentWidth: 0,
+        contentHeight: 0,
+        rotateAngle: 0, // radius
         isActive: true,
         isMoving: false
       }
@@ -142,6 +152,8 @@ export default {
         this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY)
         this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX)
         this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY)
+        this.activeSprite.contentWidth = this.activeSprite.width
+        this.activeSprite.contentHeight = this.activeSprite.height
       } else if(this.isMovingSprite){
         this.activeSprite.x = this.activeSpriteOldState.x + (offsetX - this.activeSprite.mousedownX)
         this.activeSprite.y = this.activeSpriteOldState.y + (offsetY - this.activeSprite.mousedownY)
@@ -174,7 +186,26 @@ export default {
             this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY)
             break
         }
+        let angle = this.activeSprite.rotateAngle
+        let radians, w, h
+        let sin = Math.sin, cos = Math.cos
+        if(angle >= 180) {
+          angle -= 180
+        }
+        if(angle < 90) {
+          radians = angle / 180 * Math.PI
+          w = (this.activeSprite.height * sin(radians) - this.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+          h = (this.activeSprite.width * sin(radians) - this.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+        } else {
+          radians = (angle - 90) / 180 * Math.PI
+          w = (this.activeSprite.width * sin(radians) - this.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+          h = (this.activeSprite.height * sin(radians) - this.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+        }
+        this.activeSprite.contentWidth = w
+        this.activeSprite.contentHeight = h
       }
+      this.activeSprite.centerX = this.activeSprite.x + this.activeSprite.width / 2
+      this.activeSprite.centerY = this.activeSprite.y + this.activeSprite.height / 2
     },
     mouseup: function({offsetX, offsetY, button}) {
       if(button != 0 || !this.showDragLayer) {
@@ -195,7 +226,7 @@ export default {
       this.activeSprite.isActive = true
       this.showDragLayer = true
       this.saveSpriteOldState()
-      if(/dragable/.test(target.className)) {
+      if(/resize/.test(target.className)) {
         // NOTE: resize
         if(/left-top/.test(target.className)) {
           this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX
@@ -215,12 +246,37 @@ export default {
           this.activeSprite.dragDot = "left-bottom"
         }
         this.isResizingSprite = true
+      } else if(/rotate/.test(target.className)) {
+        // NOTE: rotate
       } else {
         // NOTE: move
         this.activeSprite.mousedownX = this.activeSprite.x + offsetX + borderWidth
         this.activeSprite.mousedownY =  this.activeSprite.y + offsetY + borderWidth
         this.isMovingSprite = true
       }
+    },
+    spriteRotateHandler: function(angle) {
+      this.activeSprite.rotateAngle = angle
+      let radians, w, h
+      let sin = Math.sin, cos = Math.cos
+      if(angle >= 180) {
+        angle -= 180
+      }
+      if(angle < 90) {
+        radians = angle / 180 * Math.PI
+        w = this.activeSprite.contentWidth * cos(radians) + this.activeSprite.contentHeight * sin(radians)
+        h = this.activeSprite.contentWidth * sin(radians) + this.activeSprite.contentHeight * cos(radians)
+        // w = (this.height * sin(radians) - this.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+        // h = (this.width * sin(radians) - this.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+      } else {
+        radians = (angle - 90) / 180 * Math.PI
+        w = this.activeSprite.contentHeight * cos(radians) + this.activeSprite.contentWidth * sin(radians)
+        h = this.activeSprite.contentHeight * sin(radians) + this.activeSprite.contentWidth * cos(radians)
+        // w = (this.width * sin(radians) - this.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+        // h = (this.height * sin(radians) - this.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians))
+      }
+      this.activeSprite.width = w
+      this.activeSprite.height = h
     },
     saveSpriteOldState() {
       let {x, y, width, height} = this.activeSprite

@@ -14,6 +14,16 @@
         v-on:checkedChange="strokeChangeHandler"
       ></checkbox>
     </div>
+    <div class="option">
+      <label>旋转角度</label>
+      <input
+        type="number"
+        max="360"
+        min="0"
+        v-model="angle"
+        v-on:input="rotateHandler"
+      >
+    </div>
   </div>
 </template>
 
@@ -27,7 +37,8 @@ let SpriteOption = {
   data: function() {
     return {
       isFill: true,
-      isStroke: true
+      isStroke: true,
+      angle: 0
     }
   },
   methods: {
@@ -36,6 +47,9 @@ let SpriteOption = {
     },
     strokeChangeHandler: function(isChecked) {
       this.$emit("strokeChange", isChecked)
+    },
+    rotateHandler: function(e) {
+      this.$emit("rotate", this.angle)
     }
   }
 }
@@ -48,7 +62,7 @@ export default SpriteOption
   top: -80px;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
+  width: 260px;
   line-height: 30px;
   background-color: white;
   border: 1px solid #222;
