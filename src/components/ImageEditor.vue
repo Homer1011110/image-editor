@@ -229,6 +229,7 @@ export default {
       this.saveSpriteOldState()
       if(/resize/.test(target.className)) {
         // NOTE: resize
+        console.log("resize")
         if(/left-top/.test(target.className)) {
           this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX
           this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY
@@ -249,19 +250,22 @@ export default {
         this.isResizingSprite = true
       } else if(/rotate/.test(target.className)) {
         // NOTE: rotate
-      } else {
+        console.log("rotate")
+      } else if(/sprite-content/.test(target.className)) {
         // NOTE: move
-        let angle = this.activeSprite.rotateAngle
-        let rx = this.activeSprite.x + this.activeSprite.width / 2
-        let ry = this.activeSprite.y + this.activeSprite.height / 2
+        let angle = -this.activeSprite.rotateAngle
+        let radians = angle / 180 * Math.PI
+        let xr = this.activeSprite.x + this.activeSprite.width / 2
+        let yr = this.activeSprite.y + this.activeSprite.height / 2
         let x0 = this.activeSprite.x + this.activeSprite.width / 2 - this.activeSprite.contentWidth / 2 + offsetX + borderWidth
         let y0 = this.activeSprite.y + this.activeSprite.height / 2 - this.activeSprite.contentHeight / 2 + offsetY + borderWidth
-        let x1 = rx - (rx - x0) * cos(angle) + (ry - y0) * sin(angle)
-        let y1 = ry - (rx - x0) * sin(angle) - (ry - y0) * cos(angle)
+        let x1 = xr + (x0 - xr) * cos(radians) - (yr - y0) * sin(radians)
+        let y1 = yr - (x0 - xr) * sin(radians) - (yr - y0) * cos(radians)
         this.activeSprite.mousedownX = x1
         this.activeSprite.mousedownY = y1
-        console.log("mousedownX:", this.activeSprite.mousedownX)
-        console.log("mousedownY: ", this.activeSprite.mousedownY)
+        // console.log("xr: ", xr, "yr: ", yr, "radians: ", radians)
+        // console.log("x0: ", x0, "y0: ", y0)
+        // console.log("mousedownX:", this.activeSprite.mousedownX, "mousedownY: ", this.activeSprite.mousedownY)
         this.isMovingSprite = true
       }
     },
