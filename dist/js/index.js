@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 16);
+/******/ 	return __webpack_require__(__webpack_require__.s = 43);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -195,7 +195,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(40)
+var listToStyles = __webpack_require__(41)
 
 /*
 type StyleObject = {
@@ -285,6 +285,27 @@ function addStylesToDom (styles /* Array<StyleObject> */) {
   }
 }
 
+function listToStyles (parentId, list) {
+  var styles = []
+  var newStyles = {}
+  for (var i = 0; i < list.length; i++) {
+    var item = list[i]
+    var id = item[0]
+    var css = item[1]
+    var media = item[2]
+    var sourceMap = item[3]
+    var part = { css: css, media: media, sourceMap: sourceMap }
+    if (!newStyles[id]) {
+      part.id = parentId + ':0'
+      styles.push(newStyles[id] = { id: id, parts: [part] })
+    } else {
+      part.id = parentId + ':' + newStyles[id].parts.length
+      newStyles[id].parts.push(part)
+    }
+  }
+  return styles
+}
+
 function createStyleElement () {
   var styleElement = document.createElement('style')
   styleElement.type = 'text/css'
@@ -295,20 +316,12 @@ function createStyleElement () {
 function addStyle (obj /* StyleObjectPart */) {
   var update, remove
   var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
+  var hasSSR = styleElement != null
 
-  if (styleElement) {
-    if (isProduction) {
-      // has SSR styles and in production mode.
-      // simply do nothing.
-      return noop
-    } else {
-      // has SSR styles but in dev mode.
-      // for some reason Chrome can't handle source map in server-rendered
-      // style tags - source maps in <style> only works if the style tag is
-      // created and inserted dynamically. So we remove the server rendered
-      // styles and inject new ones.
-      styleElement.parentNode.removeChild(styleElement)
-    }
+  // if in production mode and style is already provided by SSR,
+  // simply do nothing.
+  if (hasSSR && isProduction) {
+    return noop
   }
 
   if (isOldIE) {
@@ -319,14 +332,16 @@ function addStyle (obj /* StyleObjectPart */) {
     remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
   } else {
     // use multi-style-tag mode in all other cases
-    styleElement = createStyleElement()
+    styleElement = styleElement || createStyleElement()
     update = applyToTag.bind(null, styleElement)
     remove = function () {
       styleElement.parentNode.removeChild(styleElement)
     }
   }
 
-  update(obj)
+  if (!hasSSR) {
+    update(obj)
+  }
 
   return function updateStyle (newObj /* StyleObjectPart */) {
     if (newObj) {
@@ -402,7 +417,7 @@ function applyToTag (styleElement, obj) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(process, global) {/*!
- * Vue.js v2.2.4
+ * Vue.js v2.2.2
  * (c) 2014-2017 Evan You
  * Released under the MIT License.
  */
@@ -680,7 +695,7 @@ var config = {
   /**
    * Whether to record perf
    */
-  performance: false,
+  performance: process.env.NODE_ENV !== 'production',
 
   /**
    * Error handler for watcher errors
@@ -755,48 +770,6 @@ var config = {
    */
   _maxUpdateCount: 100
 };
-
-/*  */
-
-var emptyObject = Object.freeze({});
-
-/**
- * Check if a string starts with $ or _
- */
-function isReserved (str) {
-  var c = (str + '').charCodeAt(0);
-  return c === 0x24 || c === 0x5F
-}
-
-/**
- * Define a property.
- */
-function def (obj, key, val, enumerable) {
-  Object.defineProperty(obj, key, {
-    value: val,
-    enumerable: !!enumerable,
-    writable: true,
-    configurable: true
-  });
-}
-
-/**
- * Parse simple path.
- */
-var bailRE = /[^\w.$]/;
-function parsePath (path) {
-  if (bailRE.test(path)) {
-    return
-  }
-  var segments = path.split('.');
-  return function (obj) {
-    for (var i = 0; i < segments.length; i++) {
-      if (!obj) { return }
-      obj = obj[segments[i]];
-    }
-    return obj
-  }
-}
 
 /*  */
 /* globals MutationObserver */
@@ -947,6 +920,57 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
   }());
 }
 
+var perf;
+
+if (process.env.NODE_ENV !== 'production') {
+  perf = inBrowser && window.performance;
+  if (perf && (!perf.mark || !perf.measure)) {
+    perf = undefined;
+  }
+}
+
+/*  */
+
+var emptyObject = Object.freeze({});
+
+/**
+ * Check if a string starts with $ or _
+ */
+function isReserved (str) {
+  var c = (str + '').charCodeAt(0);
+  return c === 0x24 || c === 0x5F
+}
+
+/**
+ * Define a property.
+ */
+function def (obj, key, val, enumerable) {
+  Object.defineProperty(obj, key, {
+    value: val,
+    enumerable: !!enumerable,
+    writable: true,
+    configurable: true
+  });
+}
+
+/**
+ * Parse simple path.
+ */
+var bailRE = /[^\w.$]/;
+function parsePath (path) {
+  if (bailRE.test(path)) {
+    return
+  }
+  var segments = path.split('.');
+  return function (obj) {
+    for (var i = 0; i < segments.length; i++) {
+      if (!obj) { return }
+      obj = obj[segments[i]];
+    }
+    return obj
+  }
+}
+
 var warn = noop;
 var tip = noop;
 var formatComponentName;
@@ -978,11 +1002,9 @@ if (process.env.NODE_ENV !== 'production') {
     if (vm.$root === vm) {
       return '<Root>'
     }
-    var name = typeof vm === 'function' && vm.options
-      ? vm.options.name
-      : vm._isVue
-        ? vm.$options.name || vm.$options._componentTag
-        : vm.name;
+    var name = vm._isVue
+      ? vm.$options.name || vm.$options._componentTag
+      : vm.name;
 
     var file = vm._isVue && vm.$options.__file;
     if (!name && file) {
@@ -1928,29 +1950,6 @@ if (process.env.NODE_ENV !== 'production') {
   };
 }
 
-var mark;
-var measure;
-
-if (process.env.NODE_ENV !== 'production') {
-  var perf = inBrowser && window.performance;
-  /* istanbul ignore if */
-  if (
-    perf &&
-    perf.mark &&
-    perf.measure &&
-    perf.clearMarks &&
-    perf.clearMeasures
-  ) {
-    mark = function (tag) { return perf.mark(tag); };
-    measure = function (name, startTag, endTag) {
-      perf.measure(name, startTag, endTag);
-      perf.clearMarks(startTag);
-      perf.clearMarks(endTag);
-      perf.clearMeasures(name);
-    };
-  }
-}
-
 /*  */
 
 var VNode = function VNode (
@@ -2522,22 +2521,19 @@ function mountComponent (
 
   var updateComponent;
   /* istanbul ignore if */
-  if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+  if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
     updateComponent = function () {
       var name = vm._name;
-      var id = vm._uid;
-      var startTag = "vue-perf-start:" + id;
-      var endTag = "vue-perf-end:" + id;
-
-      mark(startTag);
+      var startTag = "start " + name;
+      var endTag = "end " + name;
+      perf.mark(startTag);
       var vnode = vm._render();
-      mark(endTag);
-      measure((name + " render"), startTag, endTag);
-
-      mark(startTag);
+      perf.mark(endTag);
+      perf.measure((name + " render"), startTag, endTag);
+      perf.mark(startTag);
       vm._update(vnode, hydrating);
-      mark(endTag);
-      measure((name + " patch"), startTag, endTag);
+      perf.mark(endTag);
+      perf.measure((name + " patch"), startTag, endTag);
     };
   } else {
     updateComponent = function () {
@@ -3279,63 +3275,8 @@ function stateMixin (Vue) {
 
 /*  */
 
-// hooks to be invoked on component VNodes during patch
-var componentVNodeHooks = {
-  init: function init (
-    vnode,
-    hydrating,
-    parentElm,
-    refElm
-  ) {
-    if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
-      var child = vnode.componentInstance = createComponentInstanceForVnode(
-        vnode,
-        activeInstance,
-        parentElm,
-        refElm
-      );
-      child.$mount(hydrating ? vnode.elm : undefined, hydrating);
-    } else if (vnode.data.keepAlive) {
-      // kept-alive components, treat as a patch
-      var mountedNode = vnode; // work around flow
-      componentVNodeHooks.prepatch(mountedNode, mountedNode);
-    }
-  },
-
-  prepatch: function prepatch (oldVnode, vnode) {
-    var options = vnode.componentOptions;
-    var child = vnode.componentInstance = oldVnode.componentInstance;
-    updateChildComponent(
-      child,
-      options.propsData, // updated props
-      options.listeners, // updated listeners
-      vnode, // new parent vnode
-      options.children // new children
-    );
-  },
-
-  insert: function insert (vnode) {
-    if (!vnode.componentInstance._isMounted) {
-      vnode.componentInstance._isMounted = true;
-      callHook(vnode.componentInstance, 'mounted');
-    }
-    if (vnode.data.keepAlive) {
-      activateChildComponent(vnode.componentInstance, true /* direct */);
-    }
-  },
-
-  destroy: function destroy (vnode) {
-    if (!vnode.componentInstance._isDestroyed) {
-      if (!vnode.data.keepAlive) {
-        vnode.componentInstance.$destroy();
-      } else {
-        deactivateChildComponent(vnode.componentInstance, true /* direct */);
-      }
-    }
-  }
-};
-
-var hooksToMerge = Object.keys(componentVNodeHooks);
+var hooks = { init: init, prepatch: prepatch, insert: insert, destroy: destroy };
+var hooksToMerge = Object.keys(hooks);
 
 function createComponent (
   Ctor,
@@ -3483,6 +3424,62 @@ function createComponentInstanceForVnode (
   return new vnodeComponentOptions.Ctor(options)
 }
 
+function init (
+  vnode,
+  hydrating,
+  parentElm,
+  refElm
+) {
+  if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
+    var child = vnode.componentInstance = createComponentInstanceForVnode(
+      vnode,
+      activeInstance,
+      parentElm,
+      refElm
+    );
+    child.$mount(hydrating ? vnode.elm : undefined, hydrating);
+  } else if (vnode.data.keepAlive) {
+    // kept-alive components, treat as a patch
+    var mountedNode = vnode; // work around flow
+    prepatch(mountedNode, mountedNode);
+  }
+}
+
+function prepatch (
+  oldVnode,
+  vnode
+) {
+  var options = vnode.componentOptions;
+  var child = vnode.componentInstance = oldVnode.componentInstance;
+  updateChildComponent(
+    child,
+    options.propsData, // updated props
+    options.listeners, // updated listeners
+    vnode, // new parent vnode
+    options.children // new children
+  );
+}
+
+function insert (vnode) {
+  if (!vnode.componentInstance._isMounted) {
+    vnode.componentInstance._isMounted = true;
+    callHook(vnode.componentInstance, 'mounted');
+  }
+  if (vnode.data.keepAlive) {
+    activateChildComponent(vnode.componentInstance, true /* direct */);
+  }
+}
+
+function destroy (vnode) {
+  if (!vnode.componentInstance._isDestroyed) {
+    if (!vnode.data.keepAlive) {
+      vnode.componentInstance.$destroy();
+    } else {
+      deactivateChildComponent(vnode.componentInstance, true /* direct */);
+    }
+  }
+}
+
 function resolveAsyncComponent (
   factory,
   baseCtor,
@@ -3546,21 +3543,6 @@ function extractProps (data, Ctor) {
   if (attrs || props || domProps) {
     for (var key in propOptions) {
       var altKey = hyphenate(key);
-      if (process.env.NODE_ENV !== 'production') {
-        var keyInLowerCase = key.toLowerCase();
-        if (
-          key !== keyInLowerCase &&
-          attrs && attrs.hasOwnProperty(keyInLowerCase)
-        ) {
-          warn(
-            "Prop \"" + keyInLowerCase + "\" is not declared in component " +
-            (formatComponentName(Ctor)) + ". Note that HTML attributes are " +
-            "case-insensitive and camelCased props need to use their kebab-case " +
-            "equivalents when using in-DOM templates. You should probably use " +
-            "\"" + altKey + "\" instead of \"" + key + "\"."
-          );
-        }
-      }
       checkProp(res, props, key, altKey, true) ||
       checkProp(res, attrs, key, altKey) ||
       checkProp(res, domProps, key, altKey);
@@ -3601,7 +3583,7 @@ function mergeHooks (data) {
   for (var i = 0; i < hooksToMerge.length; i++) {
     var key = hooksToMerge[i];
     var fromParent = data.hook[key];
-    var ours = componentVNodeHooks[key];
+    var ours = hooks[key];
     data.hook[key] = fromParent ? mergeHook$1(ours, fromParent) : ours;
   }
 }
@@ -3843,17 +3825,14 @@ function bindObjectProps (
       if (Array.isArray(value)) {
         value = toObject(value);
       }
-      var hash;
       for (var key in value) {
         if (key === 'class' || key === 'style') {
-          hash = data;
+          data[key] = value[key];
         } else {
           var type = data.attrs && data.attrs.type;
-          hash = asProp || config.mustUseProp(tag, type, key)
+          var hash = asProp || config.mustUseProp(tag, type, key)
             ? data.domProps || (data.domProps = {})
             : data.attrs || (data.attrs = {});
-        }
-        if (!(key in hash)) {
           hash[key] = value[key];
         }
       }
@@ -4065,8 +4044,8 @@ var uid = 0;
 function initMixin (Vue) {
   Vue.prototype._init = function (options) {
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      mark('vue-perf-init');
+    if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+      perf.mark('init');
     }
 
     var vm = this;
@@ -4105,10 +4084,10 @@ function initMixin (Vue) {
     callHook(vm, 'created');
 
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+    if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
       vm._name = formatComponentName(vm, false);
-      mark('vue-perf-init-end');
-      measure(((vm._name) + " init"), 'vue-perf-init', 'vue-perf-init-end');
+      perf.mark('init end');
+      perf.measure(((vm._name) + " init"), 'init', 'init end');
     }
 
     if (vm.$options.el) {
@@ -4520,7 +4499,7 @@ Object.defineProperty(Vue$3.prototype, '$isServer', {
   get: isServerRendering
 });
 
-Vue$3.version = '2.2.4';
+Vue$3.version = '2.2.2';
 
 /*  */
 
@@ -4858,7 +4837,7 @@ function registerRef (vnode, isRemoval) {
 
 var emptyNode = new VNode('', {}, []);
 
-var hooks = ['create', 'activate', 'update', 'remove', 'destroy'];
+var hooks$1 = ['create', 'activate', 'update', 'remove', 'destroy'];
 
 function isUndef (s) {
   return s == null
@@ -4894,10 +4873,10 @@ function createPatchFunction (backend) {
   var modules = backend.modules;
   var nodeOps = backend.nodeOps;
 
-  for (i = 0; i < hooks.length; ++i) {
-    cbs[hooks[i]] = [];
+  for (i = 0; i < hooks$1.length; ++i) {
+    cbs[hooks$1[i]] = [];
     for (j = 0; j < modules.length; ++j) {
-      if (modules[j][hooks[i]] !== undefined) { cbs[hooks[i]].push(modules[j][hooks[i]]); }
+      if (modules[j][hooks$1[i]] !== undefined) { cbs[hooks$1[i]].push(modules[j][hooks$1[i]]); }
     }
   }
 
@@ -7698,7 +7677,7 @@ var IS_REGEX_CAPTURING_BROKEN = false;
 });
 
 // Special Elements (can contain anything)
-var isPlainTextElement = makeMap('script,style,textarea', true);
+var isScriptOrStyle = makeMap('script,style', true);
 var reCache = {};
 
 var decodingMap = {
@@ -7724,8 +7703,8 @@ function parseHTML (html, options) {
   var last, lastTag;
   while (html) {
     last = html;
-    // Make sure we're not in a plaintext content element like script/style
-    if (!lastTag || !isPlainTextElement(lastTag)) {
+    // Make sure we're not in a script or style element
+    if (!lastTag || !isScriptOrStyle(lastTag)) {
       var textEnd = html.indexOf('<');
       if (textEnd === 0) {
         // Comment:
@@ -7805,7 +7784,7 @@ function parseHTML (html, options) {
       var endTagLength = 0;
       var rest = html.replace(reStackedTag, function (all, text, endTag) {
         endTagLength = endTag.length;
-        if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
+        if (stackedTag !== 'script' && stackedTag !== 'style' && stackedTag !== 'noscript') {
           text = text
             .replace(/<!--([\s\S]*?)-->/g, '$1')
             .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1');
@@ -8000,26 +7979,25 @@ function parseText (
 
 /*  */
 
-var onRE = /^@|^v-on:/;
 var dirRE = /^v-|^@|^:/;
+var onRE = /^@|^v-on:/;
 var forAliasRE = /(.*?)\s+(?:in|of)\s+(.*)/;
 var forIteratorRE = /\((\{[^}]*\}|[^,]*),([^,]*)(?:,([^,]*))?\)/;
-
-var argRE = /:(.*)$/;
 var bindRE = /^:|^v-bind:/;
+var argRE = /:(.*)$/;
 var modifierRE = /\.[^.]+/g;
 
 var decodeHTMLCached = cached(decode);
 
 // configurable state
 var warn$2;
-var delimiters;
-var transforms;
-var preTransforms;
-var postTransforms;
-var platformIsPreTag;
-var platformMustUseProp;
 var platformGetTagNamespace;
+var platformMustUseProp;
+var platformIsPreTag;
+var preTransforms;
+var transforms;
+var postTransforms;
+var delimiters;
 
 /**
  * Convert HTML string to AST.
@@ -8044,13 +8022,6 @@ function parse (
   var inVPre = false;
   var inPre = false;
   var warned = false;
-
-  function warnOnce (msg) {
-    if (!warned) {
-      warned = true;
-      warn$2(msg);
-    }
-  }
 
   function endPre (element) {
     // check pre state
@@ -8135,15 +8106,17 @@ function parse (
       }
 
       function checkRootConstraints (el) {
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env.NODE_ENV !== 'production' && !warned) {
           if (el.tag === 'slot' || el.tag === 'template') {
-            warnOnce(
+            warned = true;
+            warn$2(
               "Cannot use <" + (el.tag) + "> as component root element because it may " +
               'contain multiple nodes.'
             );
           }
           if (el.attrsMap.hasOwnProperty('v-for')) {
-            warnOnce(
+            warned = true;
+            warn$2(
               'Cannot use v-for on stateful component root element because ' +
               'it renders multiple elements.'
             );
@@ -8163,8 +8136,9 @@ function parse (
             exp: element.elseif,
             block: element
           });
-        } else if (process.env.NODE_ENV !== 'production') {
-          warnOnce(
+        } else if (process.env.NODE_ENV !== 'production' && !warned) {
+          warned = true;
+          warn$2(
             "Component template should contain exactly one root element. " +
             "If you are using v-if on multiple elements, " +
             "use v-else-if to chain them instead."
@@ -8209,16 +8183,11 @@ function parse (
 
     chars: function chars (text) {
       if (!currentParent) {
-        if (process.env.NODE_ENV !== 'production') {
-          if (text === template) {
-            warnOnce(
-              'Component template requires a root element, rather than just text.'
-            );
-          } else if ((text = text.trim())) {
-            warnOnce(
-              ("text \"" + text + "\" outside root element will be ignored.")
-            );
-          }
+        if (process.env.NODE_ENV !== 'production' && !warned && text === template) {
+          warned = true;
+          warn$2(
+            'Component template requires a root element, rather than just text.'
+          );
         }
         return
       }
@@ -8417,7 +8386,7 @@ function processComponent (el) {
 
 function processAttrs (el) {
   var list = el.attrsList;
-  var i, l, name, rawName, value, modifiers, isProp;
+  var i, l, name, rawName, value, arg, modifiers, isProp;
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name;
     value = list[i].value;
@@ -8455,8 +8424,7 @@ function processAttrs (el) {
         name = name.replace(dirRE, '');
         // parse arg
         var argMatch = name.match(argRE);
-        var arg = argMatch && argMatch[1];
-        if (arg) {
+        if (argMatch && (arg = argMatch[1])) {
           name = name.slice(0, -(arg.length + 1));
         }
         addDirective(el, name, rawName, value, arg, modifiers);
@@ -8742,11 +8710,10 @@ function genHandler (
       : ("function($event){" + (handler.value) + "}") // inline statement
   } else {
     var code = '';
-    var genModifierCode = '';
     var keys = [];
     for (var key in handler.modifiers) {
       if (modifierCode[key]) {
-        genModifierCode += modifierCode[key];
+        code += modifierCode[key];
         // left/right
         if (keyCodes[key]) {
           keys.push(key);
@@ -8757,10 +8724,6 @@ function genHandler (
     }
     if (keys.length) {
       code += genKeyFilter(keys);
-    }
-    // Make sure modifiers like prevent and stop get executed after key filtering
-    if (genModifierCode) {
-      code += genModifierCode;
     }
     var handlerCode = isMethodPath
       ? handler.value + '($event)'
@@ -9606,8 +9569,8 @@ Vue$3.prototype.$mount = function (
     }
     if (template) {
       /* istanbul ignore if */
-      if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-        mark('compile');
+      if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+        perf.mark('compile');
       }
 
       var ref = compileToFunctions(template, {
@@ -9620,9 +9583,9 @@ Vue$3.prototype.$mount = function (
       options.staticRenderFns = staticRenderFns;
 
       /* istanbul ignore if */
-      if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-        mark('compile end');
-        measure(((this._name) + " compile"), 'compile', 'compile end');
+      if (process.env.NODE_ENV !== 'production' && config.performance && perf) {
+        perf.mark('compile end');
+        perf.measure(((this._name) + " compile"), 'compile', 'compile end');
       }
     }
   }
@@ -9647,7 +9610,7 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(24), __webpack_require__(41)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25), __webpack_require__(42)))
 
 /***/ }),
 /* 4 */
@@ -9675,19 +9638,19 @@ exports.default = eventBus;
 
 
 /* styles */
-__webpack_require__(39)
+__webpack_require__(40)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(13),
+  __webpack_require__(15),
   /* template */
-  __webpack_require__(32),
+  __webpack_require__(33),
   /* scopeId */
   null,
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/Sprite.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\Sprite.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] Sprite.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -9709,23 +9672,1110 @@ module.exports = Component.exports
 
 /***/ }),
 /* 6 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Store", function() { return Store; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mapState", function() { return mapState; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mapMutations", function() { return mapMutations; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mapGetters", function() { return mapGetters; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mapActions", function() { return mapActions; });
+/**
+ * vuex v2.3.0
+ * (c) 2017 Evan You
+ * @license MIT
+ */
+var applyMixin = function (Vue) {
+  var version = Number(Vue.version.split('.')[0]);
+
+  if (version >= 2) {
+    var usesInit = Vue.config._lifecycleHooks.indexOf('init') > -1;
+    Vue.mixin(usesInit ? { init: vuexInit } : { beforeCreate: vuexInit });
+  } else {
+    // override init and inject vuex init procedure
+    // for 1.x backwards compatibility.
+    var _init = Vue.prototype._init;
+    Vue.prototype._init = function (options) {
+      if ( options === void 0 ) options = {};
+
+      options.init = options.init
+        ? [vuexInit].concat(options.init)
+        : vuexInit;
+      _init.call(this, options);
+    };
+  }
+
+  /**
+   * Vuex init hook, injected into each instances init hooks list.
+   */
+
+  function vuexInit () {
+    var options = this.$options;
+    // store injection
+    if (options.store) {
+      this.$store = options.store;
+    } else if (options.parent && options.parent.$store) {
+      this.$store = options.parent.$store;
+    }
+  }
+};
+
+var devtoolHook =
+  typeof window !== 'undefined' &&
+  window.__VUE_DEVTOOLS_GLOBAL_HOOK__;
+
+function devtoolPlugin (store) {
+  if (!devtoolHook) { return }
+
+  store._devtoolHook = devtoolHook;
+
+  devtoolHook.emit('vuex:init', store);
+
+  devtoolHook.on('vuex:travel-to-state', function (targetState) {
+    store.replaceState(targetState);
+  });
+
+  store.subscribe(function (mutation, state) {
+    devtoolHook.emit('vuex:mutation', mutation, state);
+  });
+}
+
+/**
+ * Get the first item that pass the test
+ * by second argument function
+ *
+ * @param {Array} list
+ * @param {Function} f
+ * @return {*}
+ */
+/**
+ * Deep copy the given object considering circular structure.
+ * This function caches all nested objects and its copies.
+ * If it detects circular structure, use cached copy to avoid infinite loop.
+ *
+ * @param {*} obj
+ * @param {Array<Object>} cache
+ * @return {*}
+ */
+
+
+/**
+ * forEach for object
+ */
+function forEachValue (obj, fn) {
+  Object.keys(obj).forEach(function (key) { return fn(obj[key], key); });
+}
+
+function isObject (obj) {
+  return obj !== null && typeof obj === 'object'
+}
+
+function isPromise (val) {
+  return val && typeof val.then === 'function'
+}
+
+function assert (condition, msg) {
+  if (!condition) { throw new Error(("[vuex] " + msg)) }
+}
+
+var Module = function Module (rawModule, runtime) {
+  this.runtime = runtime;
+  this._children = Object.create(null);
+  this._rawModule = rawModule;
+  var rawState = rawModule.state;
+  this.state = (typeof rawState === 'function' ? rawState() : rawState) || {};
+};
+
+var prototypeAccessors$1 = { namespaced: {} };
+
+prototypeAccessors$1.namespaced.get = function () {
+  return !!this._rawModule.namespaced
+};
+
+Module.prototype.addChild = function addChild (key, module) {
+  this._children[key] = module;
+};
+
+Module.prototype.removeChild = function removeChild (key) {
+  delete this._children[key];
+};
+
+Module.prototype.getChild = function getChild (key) {
+  return this._children[key]
+};
+
+Module.prototype.update = function update (rawModule) {
+  this._rawModule.namespaced = rawModule.namespaced;
+  if (rawModule.actions) {
+    this._rawModule.actions = rawModule.actions;
+  }
+  if (rawModule.mutations) {
+    this._rawModule.mutations = rawModule.mutations;
+  }
+  if (rawModule.getters) {
+    this._rawModule.getters = rawModule.getters;
+  }
+};
+
+Module.prototype.forEachChild = function forEachChild (fn) {
+  forEachValue(this._children, fn);
+};
+
+Module.prototype.forEachGetter = function forEachGetter (fn) {
+  if (this._rawModule.getters) {
+    forEachValue(this._rawModule.getters, fn);
+  }
+};
+
+Module.prototype.forEachAction = function forEachAction (fn) {
+  if (this._rawModule.actions) {
+    forEachValue(this._rawModule.actions, fn);
+  }
+};
+
+Module.prototype.forEachMutation = function forEachMutation (fn) {
+  if (this._rawModule.mutations) {
+    forEachValue(this._rawModule.mutations, fn);
+  }
+};
+
+Object.defineProperties( Module.prototype, prototypeAccessors$1 );
+
+var ModuleCollection = function ModuleCollection (rawRootModule) {
+  var this$1 = this;
+
+  // register root module (Vuex.Store options)
+  this.root = new Module(rawRootModule, false);
+
+  // register all nested modules
+  if (rawRootModule.modules) {
+    forEachValue(rawRootModule.modules, function (rawModule, key) {
+      this$1.register([key], rawModule, false);
+    });
+  }
+};
+
+ModuleCollection.prototype.get = function get (path) {
+  return path.reduce(function (module, key) {
+    return module.getChild(key)
+  }, this.root)
+};
+
+ModuleCollection.prototype.getNamespace = function getNamespace (path) {
+  var module = this.root;
+  return path.reduce(function (namespace, key) {
+    module = module.getChild(key);
+    return namespace + (module.namespaced ? key + '/' : '')
+  }, '')
+};
+
+ModuleCollection.prototype.update = function update$1 (rawRootModule) {
+  update(this.root, rawRootModule);
+};
+
+ModuleCollection.prototype.register = function register (path, rawModule, runtime) {
+    var this$1 = this;
+    if ( runtime === void 0 ) runtime = true;
+
+  var parent = this.get(path.slice(0, -1));
+  var newModule = new Module(rawModule, runtime);
+  parent.addChild(path[path.length - 1], newModule);
+
+  // register nested modules
+  if (rawModule.modules) {
+    forEachValue(rawModule.modules, function (rawChildModule, key) {
+      this$1.register(path.concat(key), rawChildModule, runtime);
+    });
+  }
+};
+
+ModuleCollection.prototype.unregister = function unregister (path) {
+  var parent = this.get(path.slice(0, -1));
+  var key = path[path.length - 1];
+  if (!parent.getChild(key).runtime) { return }
+
+  parent.removeChild(key);
+};
+
+function update (targetModule, newModule) {
+  // update target module
+  targetModule.update(newModule);
+
+  // update nested modules
+  if (newModule.modules) {
+    for (var key in newModule.modules) {
+      if (!targetModule.getChild(key)) {
+        console.warn(
+          "[vuex] trying to add a new module '" + key + "' on hot reloading, " +
+          'manual reload is needed'
+        );
+        return
+      }
+      update(targetModule.getChild(key), newModule.modules[key]);
+    }
+  }
+}
+
+var Vue; // bind on install
+
+var Store = function Store (options) {
+  var this$1 = this;
+  if ( options === void 0 ) options = {};
+
+  assert(Vue, "must call Vue.use(Vuex) before creating a store instance.");
+  assert(typeof Promise !== 'undefined', "vuex requires a Promise polyfill in this browser.");
+
+  var state = options.state; if ( state === void 0 ) state = {};
+  var plugins = options.plugins; if ( plugins === void 0 ) plugins = [];
+  var strict = options.strict; if ( strict === void 0 ) strict = false;
+
+  // store internal state
+  this._committing = false;
+  this._actions = Object.create(null);
+  this._mutations = Object.create(null);
+  this._wrappedGetters = Object.create(null);
+  this._modules = new ModuleCollection(options);
+  this._modulesNamespaceMap = Object.create(null);
+  this._subscribers = [];
+  this._watcherVM = new Vue();
+
+  // bind commit and dispatch to self
+  var store = this;
+  var ref = this;
+  var dispatch = ref.dispatch;
+  var commit = ref.commit;
+  this.dispatch = function boundDispatch (type, payload) {
+    return dispatch.call(store, type, payload)
+  };
+  this.commit = function boundCommit (type, payload, options) {
+    return commit.call(store, type, payload, options)
+  };
+
+  // strict mode
+  this.strict = strict;
+
+  // init root module.
+  // this also recursively registers all sub-modules
+  // and collects all module getters inside this._wrappedGetters
+  installModule(this, state, [], this._modules.root);
+
+  // initialize the store vm, which is responsible for the reactivity
+  // (also registers _wrappedGetters as computed properties)
+  resetStoreVM(this, state);
+
+  // apply plugins
+  plugins.concat(devtoolPlugin).forEach(function (plugin) { return plugin(this$1); });
+};
+
+var prototypeAccessors = { state: {} };
+
+prototypeAccessors.state.get = function () {
+  return this._vm._data.$$state
+};
+
+prototypeAccessors.state.set = function (v) {
+  assert(false, "Use store.replaceState() to explicit replace store state.");
+};
+
+Store.prototype.commit = function commit (_type, _payload, _options) {
+    var this$1 = this;
+
+  // check object-style commit
+  var ref = unifyObjectStyle(_type, _payload, _options);
+    var type = ref.type;
+    var payload = ref.payload;
+    var options = ref.options;
+
+  var mutation = { type: type, payload: payload };
+  var entry = this._mutations[type];
+  if (!entry) {
+    console.error(("[vuex] unknown mutation type: " + type));
+    return
+  }
+  this._withCommit(function () {
+    entry.forEach(function commitIterator (handler) {
+      handler(payload);
+    });
+  });
+  this._subscribers.forEach(function (sub) { return sub(mutation, this$1.state); });
+
+  if (options && options.silent) {
+    console.warn(
+      "[vuex] mutation type: " + type + ". Silent option has been removed. " +
+      'Use the filter functionality in the vue-devtools'
+    );
+  }
+};
+
+Store.prototype.dispatch = function dispatch (_type, _payload) {
+  // check object-style dispatch
+  var ref = unifyObjectStyle(_type, _payload);
+    var type = ref.type;
+    var payload = ref.payload;
+
+  var entry = this._actions[type];
+  if (!entry) {
+    console.error(("[vuex] unknown action type: " + type));
+    return
+  }
+  return entry.length > 1
+    ? Promise.all(entry.map(function (handler) { return handler(payload); }))
+    : entry[0](payload)
+};
+
+Store.prototype.subscribe = function subscribe (fn) {
+  var subs = this._subscribers;
+  if (subs.indexOf(fn) < 0) {
+    subs.push(fn);
+  }
+  return function () {
+    var i = subs.indexOf(fn);
+    if (i > -1) {
+      subs.splice(i, 1);
+    }
+  }
+};
+
+Store.prototype.watch = function watch (getter, cb, options) {
+    var this$1 = this;
+
+  assert(typeof getter === 'function', "store.watch only accepts a function.");
+  return this._watcherVM.$watch(function () { return getter(this$1.state, this$1.getters); }, cb, options)
+};
+
+Store.prototype.replaceState = function replaceState (state) {
+    var this$1 = this;
+
+  this._withCommit(function () {
+    this$1._vm._data.$$state = state;
+  });
+};
+
+Store.prototype.registerModule = function registerModule (path, rawModule) {
+  if (typeof path === 'string') { path = [path]; }
+  assert(Array.isArray(path), "module path must be a string or an Array.");
+  this._modules.register(path, rawModule);
+  installModule(this, this.state, path, this._modules.get(path));
+  // reset store to update getters...
+  resetStoreVM(this, this.state);
+};
+
+Store.prototype.unregisterModule = function unregisterModule (path) {
+    var this$1 = this;
+
+  if (typeof path === 'string') { path = [path]; }
+  assert(Array.isArray(path), "module path must be a string or an Array.");
+  this._modules.unregister(path);
+  this._withCommit(function () {
+    var parentState = getNestedState(this$1.state, path.slice(0, -1));
+    Vue.delete(parentState, path[path.length - 1]);
+  });
+  resetStore(this);
+};
+
+Store.prototype.hotUpdate = function hotUpdate (newOptions) {
+  this._modules.update(newOptions);
+  resetStore(this, true);
+};
+
+Store.prototype._withCommit = function _withCommit (fn) {
+  var committing = this._committing;
+  this._committing = true;
+  fn();
+  this._committing = committing;
+};
+
+Object.defineProperties( Store.prototype, prototypeAccessors );
+
+function resetStore (store, hot) {
+  store._actions = Object.create(null);
+  store._mutations = Object.create(null);
+  store._wrappedGetters = Object.create(null);
+  store._modulesNamespaceMap = Object.create(null);
+  var state = store.state;
+  // init all modules
+  installModule(store, state, [], store._modules.root, true);
+  // reset vm
+  resetStoreVM(store, state, hot);
+}
+
+function resetStoreVM (store, state, hot) {
+  var oldVm = store._vm;
+
+  // bind store public getters
+  store.getters = {};
+  var wrappedGetters = store._wrappedGetters;
+  var computed = {};
+  forEachValue(wrappedGetters, function (fn, key) {
+    // use computed to leverage its lazy-caching mechanism
+    computed[key] = function () { return fn(store); };
+    Object.defineProperty(store.getters, key, {
+      get: function () { return store._vm[key]; },
+      enumerable: true // for local getters
+    });
+  });
+
+  // use a Vue instance to store the state tree
+  // suppress warnings just in case the user has added
+  // some funky global mixins
+  var silent = Vue.config.silent;
+  Vue.config.silent = true;
+  store._vm = new Vue({
+    data: {
+      $$state: state
+    },
+    computed: computed
+  });
+  Vue.config.silent = silent;
+
+  // enable strict mode for new vm
+  if (store.strict) {
+    enableStrictMode(store);
+  }
+
+  if (oldVm) {
+    if (hot) {
+      // dispatch changes in all subscribed watchers
+      // to force getter re-evaluation for hot reloading.
+      store._withCommit(function () {
+        oldVm._data.$$state = null;
+      });
+    }
+    Vue.nextTick(function () { return oldVm.$destroy(); });
+  }
+}
+
+function installModule (store, rootState, path, module, hot) {
+  var isRoot = !path.length;
+  var namespace = store._modules.getNamespace(path);
+
+  // register in namespace map
+  if (module.namespaced) {
+    store._modulesNamespaceMap[namespace] = module;
+  }
+
+  // set state
+  if (!isRoot && !hot) {
+    var parentState = getNestedState(rootState, path.slice(0, -1));
+    var moduleName = path[path.length - 1];
+    store._withCommit(function () {
+      Vue.set(parentState, moduleName, module.state);
+    });
+  }
+
+  var local = module.context = makeLocalContext(store, namespace, path);
+
+  module.forEachMutation(function (mutation, key) {
+    var namespacedType = namespace + key;
+    registerMutation(store, namespacedType, mutation, local);
+  });
+
+  module.forEachAction(function (action, key) {
+    var namespacedType = namespace + key;
+    registerAction(store, namespacedType, action, local);
+  });
+
+  module.forEachGetter(function (getter, key) {
+    var namespacedType = namespace + key;
+    registerGetter(store, namespacedType, getter, local);
+  });
+
+  module.forEachChild(function (child, key) {
+    installModule(store, rootState, path.concat(key), child, hot);
+  });
+}
+
+/**
+ * make localized dispatch, commit, getters and state
+ * if there is no namespace, just use root ones
+ */
+function makeLocalContext (store, namespace, path) {
+  var noNamespace = namespace === '';
+
+  var local = {
+    dispatch: noNamespace ? store.dispatch : function (_type, _payload, _options) {
+      var args = unifyObjectStyle(_type, _payload, _options);
+      var payload = args.payload;
+      var options = args.options;
+      var type = args.type;
+
+      if (!options || !options.root) {
+        type = namespace + type;
+        if (!store._actions[type]) {
+          console.error(("[vuex] unknown local action type: " + (args.type) + ", global type: " + type));
+          return
+        }
+      }
+
+      return store.dispatch(type, payload)
+    },
+
+    commit: noNamespace ? store.commit : function (_type, _payload, _options) {
+      var args = unifyObjectStyle(_type, _payload, _options);
+      var payload = args.payload;
+      var options = args.options;
+      var type = args.type;
+
+      if (!options || !options.root) {
+        type = namespace + type;
+        if (!store._mutations[type]) {
+          console.error(("[vuex] unknown local mutation type: " + (args.type) + ", global type: " + type));
+          return
+        }
+      }
+
+      store.commit(type, payload, options);
+    }
+  };
+
+  // getters and state object must be gotten lazily
+  // because they will be changed by vm update
+  Object.defineProperties(local, {
+    getters: {
+      get: noNamespace
+        ? function () { return store.getters; }
+        : function () { return makeLocalGetters(store, namespace); }
+    },
+    state: {
+      get: function () { return getNestedState(store.state, path); }
+    }
+  });
+
+  return local
+}
+
+function makeLocalGetters (store, namespace) {
+  var gettersProxy = {};
+
+  var splitPos = namespace.length;
+  Object.keys(store.getters).forEach(function (type) {
+    // skip if the target getter is not match this namespace
+    if (type.slice(0, splitPos) !== namespace) { return }
+
+    // extract local getter type
+    var localType = type.slice(splitPos);
+
+    // Add a port to the getters proxy.
+    // Define as getter property because
+    // we do not want to evaluate the getters in this time.
+    Object.defineProperty(gettersProxy, localType, {
+      get: function () { return store.getters[type]; },
+      enumerable: true
+    });
+  });
+
+  return gettersProxy
+}
+
+function registerMutation (store, type, handler, local) {
+  var entry = store._mutations[type] || (store._mutations[type] = []);
+  entry.push(function wrappedMutationHandler (payload) {
+    handler(local.state, payload);
+  });
+}
+
+function registerAction (store, type, handler, local) {
+  var entry = store._actions[type] || (store._actions[type] = []);
+  entry.push(function wrappedActionHandler (payload, cb) {
+    var res = handler({
+      dispatch: local.dispatch,
+      commit: local.commit,
+      getters: local.getters,
+      state: local.state,
+      rootGetters: store.getters,
+      rootState: store.state
+    }, payload, cb);
+    if (!isPromise(res)) {
+      res = Promise.resolve(res);
+    }
+    if (store._devtoolHook) {
+      return res.catch(function (err) {
+        store._devtoolHook.emit('vuex:error', err);
+        throw err
+      })
+    } else {
+      return res
+    }
+  });
+}
+
+function registerGetter (store, type, rawGetter, local) {
+  if (store._wrappedGetters[type]) {
+    console.error(("[vuex] duplicate getter key: " + type));
+    return
+  }
+  store._wrappedGetters[type] = function wrappedGetter (store) {
+    return rawGetter(
+      local.state, // local state
+      local.getters, // local getters
+      store.state, // root state
+      store.getters // root getters
+    )
+  };
+}
+
+function enableStrictMode (store) {
+  store._vm.$watch(function () { return this._data.$$state }, function () {
+    assert(store._committing, "Do not mutate vuex store state outside mutation handlers.");
+  }, { deep: true, sync: true });
+}
+
+function getNestedState (state, path) {
+  return path.length
+    ? path.reduce(function (state, key) { return state[key]; }, state)
+    : state
+}
+
+function unifyObjectStyle (type, payload, options) {
+  if (isObject(type) && type.type) {
+    options = payload;
+    payload = type;
+    type = type.type;
+  }
+
+  assert(typeof type === 'string', ("Expects string as the type, but found " + (typeof type) + "."));
+
+  return { type: type, payload: payload, options: options }
+}
+
+function install (_Vue) {
+  if (Vue) {
+    console.error(
+      '[vuex] already installed. Vue.use(Vuex) should be called only once.'
+    );
+    return
+  }
+  Vue = _Vue;
+  applyMixin(Vue);
+}
+
+// auto install in dist mode
+if (typeof window !== 'undefined' && window.Vue) {
+  install(window.Vue);
+}
+
+var mapState = normalizeNamespace(function (namespace, states) {
+  var res = {};
+  normalizeMap(states).forEach(function (ref) {
+    var key = ref.key;
+    var val = ref.val;
+
+    res[key] = function mappedState () {
+      var state = this.$store.state;
+      var getters = this.$store.getters;
+      if (namespace) {
+        var module = getModuleByNamespace(this.$store, 'mapState', namespace);
+        if (!module) {
+          return
+        }
+        state = module.context.state;
+        getters = module.context.getters;
+      }
+      return typeof val === 'function'
+        ? val.call(this, state, getters)
+        : state[val]
+    };
+    // mark vuex getter for devtools
+    res[key].vuex = true;
+  });
+  return res
+});
+
+var mapMutations = normalizeNamespace(function (namespace, mutations) {
+  var res = {};
+  normalizeMap(mutations).forEach(function (ref) {
+    var key = ref.key;
+    var val = ref.val;
+
+    val = namespace + val;
+    res[key] = function mappedMutation () {
+      var args = [], len = arguments.length;
+      while ( len-- ) args[ len ] = arguments[ len ];
+
+      if (namespace && !getModuleByNamespace(this.$store, 'mapMutations', namespace)) {
+        return
+      }
+      return this.$store.commit.apply(this.$store, [val].concat(args))
+    };
+  });
+  return res
+});
+
+var mapGetters = normalizeNamespace(function (namespace, getters) {
+  var res = {};
+  normalizeMap(getters).forEach(function (ref) {
+    var key = ref.key;
+    var val = ref.val;
+
+    val = namespace + val;
+    res[key] = function mappedGetter () {
+      if (namespace && !getModuleByNamespace(this.$store, 'mapGetters', namespace)) {
+        return
+      }
+      if (!(val in this.$store.getters)) {
+        console.error(("[vuex] unknown getter: " + val));
+        return
+      }
+      return this.$store.getters[val]
+    };
+    // mark vuex getter for devtools
+    res[key].vuex = true;
+  });
+  return res
+});
+
+var mapActions = normalizeNamespace(function (namespace, actions) {
+  var res = {};
+  normalizeMap(actions).forEach(function (ref) {
+    var key = ref.key;
+    var val = ref.val;
+
+    val = namespace + val;
+    res[key] = function mappedAction () {
+      var args = [], len = arguments.length;
+      while ( len-- ) args[ len ] = arguments[ len ];
+
+      if (namespace && !getModuleByNamespace(this.$store, 'mapActions', namespace)) {
+        return
+      }
+      return this.$store.dispatch.apply(this.$store, [val].concat(args))
+    };
+  });
+  return res
+});
+
+function normalizeMap (map) {
+  return Array.isArray(map)
+    ? map.map(function (key) { return ({ key: key, val: key }); })
+    : Object.keys(map).map(function (key) { return ({ key: key, val: map[key] }); })
+}
+
+function normalizeNamespace (fn) {
+  return function (namespace, map) {
+    if (typeof namespace !== 'string') {
+      map = namespace;
+      namespace = '';
+    } else if (namespace.charAt(namespace.length - 1) !== '/') {
+      namespace += '/';
+    }
+    return fn(namespace, map)
+  }
+}
+
+function getModuleByNamespace (store, helper, namespace) {
+  var module = store._modulesNamespaceMap[namespace];
+  if (!module) {
+    console.error(("[vuex] module namespace not found in " + helper + "(): " + namespace));
+  }
+  return module
+}
+
+var index_esm = {
+  Store: Store,
+  install: install,
+  version: '2.3.0',
+  mapState: mapState,
+  mapMutations: mapMutations,
+  mapGetters: mapGetters,
+  mapActions: mapActions
+};
+
+/* harmony default export */ __webpack_exports__["default"] = index_esm;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _vue = __webpack_require__(3);
+
+var _vue2 = _interopRequireDefault(_vue);
+
+var _vuex = __webpack_require__(6);
+
+var _vuex2 = _interopRequireDefault(_vuex);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// console.log("store")
+_vue2.default.use(_vuex2.default);
+
+var store = new _vuex2.default.Store({
+  state: {
+    // NOTE: ImageEditor State
+    isCreatingSprite: false, //is user dragging to create a sprite
+    isMovingSprite: false,
+    isResizingSprite: false,
+    sampleImgUrl: "http://localhost:8089/imgs/bg-2.jpg",
+    isImgLoaded: false,
+    bgCanvasWidth: 300,
+    bgCanvasHeight: 300,
+    bgContext: null,
+    showDragLayer: false, //control the darglayer to show or hide
+    sprites: [],
+    activeSprite: null,
+    activeSpriteOldState: null,
+    selectedSprite: null
+  },
+  // NOTE: use store.commit("mutationsName", data)
+  mutations: {
+    spriteSelected: function spriteSelected(state, _ref) {
+      var sprite = _ref.sprite;
+
+      state.selectedSprite = sprite;
+      state.showDragLayer = true;
+      if (state.activeSprite) {
+        state.activeSprite.isActive = false;
+      }
+    },
+    canvasMousedown: function canvasMousedown(state, _ref2) {
+      var offsetX = _ref2.offsetX,
+          offsetY = _ref2.offsetY,
+          button = _ref2.button;
+
+      if (button != 0 || !state.showDragLayer || !state.selectedSprite) {
+        return;
+      }
+      state.isCreatingSprite = true;
+      var sprite = {
+        startX: offsetX,
+        startY: offsetY,
+        mousedownX: offsetX, // coordinate of mousedown when create|move|resize
+        mousedownY: offsetY, //
+        x: offsetX, // coordinate of sprite
+        y: offsetY,
+        centerX: offsetX,
+        centerY: offsetY,
+        width: 0,
+        height: 0,
+        contentWidth: 0,
+        contentHeight: 0,
+        rotateAngle: 0, // radius
+        isActive: true,
+        isMoving: false
+      };
+      sprite.name = state.selectedSprite;
+      state.sprites.push(sprite);
+      state.activeSprite = sprite;
+    },
+    dragLayerMousemove: function dragLayerMousemove(state, _ref3) {
+      var offsetX = _ref3.offsetX,
+          offsetY = _ref3.offsetY,
+          button = _ref3.button,
+          target = _ref3.target;
+
+      if (button != 0 || !state.showDragLayer) {
+        return;
+      }
+      if (!state.activeSprite) {
+        console.warn("this.activeSprite is " + state.activeSprite);
+        return;
+      }
+      if (state.isCreatingSprite) {
+        state.activeSprite.x = Math.min(state.activeSprite.startX, offsetX);
+        state.activeSprite.y = Math.min(state.activeSprite.startY, offsetY);
+        state.activeSprite.width = Math.abs(state.activeSprite.startX - offsetX);
+        state.activeSprite.height = Math.abs(state.activeSprite.startY - offsetY);
+        state.activeSprite.contentWidth = state.activeSprite.width;
+        state.activeSprite.contentHeight = state.activeSprite.height;
+      } else if (state.isMovingSprite) {
+        state.activeSprite.x = state.activeSpriteOldState.x + (offsetX - state.activeSprite.mousedownX);
+        state.activeSprite.y = state.activeSpriteOldState.y + (offsetY - state.activeSprite.mousedownY);
+      } else if (state.isResizingSprite) {
+        var diffX = offsetX - state.activeSprite.mousedownX;
+        var diffY = offsetY - state.activeSprite.mousedownY;
+        switch (state.activeSprite.dragDot) {
+          case "left-top":
+            state.activeSprite.x = Math.min(state.activeSpriteOldState.x + diffX, state.activeSpriteOldState.x + state.activeSpriteOldState.width);
+            state.activeSprite.y = Math.min(state.activeSpriteOldState.y + diffY, state.activeSpriteOldState.y + state.activeSpriteOldState.height);
+            state.activeSprite.width = Math.abs(state.activeSpriteOldState.width - diffX);
+            state.activeSprite.height = Math.abs(state.activeSpriteOldState.height - diffY);
+            break;
+          case "right-top":
+            state.activeSprite.x = Math.min(state.activeSpriteOldState.x, state.activeSpriteOldState.x + state.activeSpriteOldState.width + diffX);
+            state.activeSprite.y = Math.min(state.activeSpriteOldState.y + diffY, state.activeSpriteOldState.y + state.activeSpriteOldState.height);
+            state.activeSprite.width = Math.abs(state.activeSpriteOldState.width + diffX);
+            state.activeSprite.height = Math.abs(state.activeSpriteOldState.height - diffY);
+            break;
+          case "right-bottom":
+            state.activeSprite.x = Math.min(state.activeSpriteOldState.x, state.activeSpriteOldState.x + state.activeSpriteOldState.width + diffX);
+            state.activeSprite.y = Math.min(state.activeSpriteOldState.y, state.activeSpriteOldState.y + state.activeSpriteOldState.height + diffY);
+            state.activeSprite.width = Math.abs(state.activeSpriteOldState.width + diffX);
+            state.activeSprite.height = Math.abs(state.activeSpriteOldState.height + diffY);
+            break;
+          case "left-bottom":
+            state.activeSprite.x = Math.min(state.activeSpriteOldState.x + diffX, state.activeSpriteOldState.x + state.activeSpriteOldState.width);
+            state.activeSprite.y = Math.min(state.activeSpriteOldState.y, state.activeSpriteOldState.y + state.activeSpriteOldState.height + diffY);
+            state.activeSprite.width = Math.abs(state.activeSpriteOldState.width - diffX);
+            state.activeSprite.height = Math.abs(state.activeSpriteOldState.height + diffY);
+            break;
+        }
+        var angle = state.activeSprite.rotateAngle;
+        var radians = void 0,
+            w = void 0,
+            h = void 0;
+        var sin = Math.sin,
+            cos = Math.cos;
+        if (angle >= 180) {
+          angle -= 180;
+        }
+        if (angle < 90) {
+          radians = angle / 180 * Math.PI;
+          w = (state.activeSprite.height * sin(radians) - state.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+          h = (state.activeSprite.width * sin(radians) - state.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+        } else {
+          radians = (angle - 90) / 180 * Math.PI;
+          w = (state.activeSprite.width * sin(radians) - state.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+          h = (state.activeSprite.height * sin(radians) - state.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
+        }
+        state.activeSprite.contentWidth = w;
+        state.activeSprite.contentHeight = h;
+      }
+      state.activeSprite.centerX = state.activeSprite.x + state.activeSprite.width / 2;
+      state.activeSprite.centerY = state.activeSprite.y + state.activeSprite.height / 2;
+    },
+    dragLayerMouseup: function dragLayerMouseup(state, _ref4) {
+      var offsetX = _ref4.offsetX,
+          offsetY = _ref4.offsetY,
+          button = _ref4.button;
+
+      if (button != 0 || !state.showDragLayer) {
+        return;
+      }
+      state.isCreatingSprite = false;
+      state.isMovingSprite = false;
+      state.isResizingSprite = false;
+      state.showDragLayer = false;
+      state.selectedSprite = null;
+    },
+    spriteMousedown: function spriteMousedown(state, _ref5) {
+      var index = _ref5.index,
+          borderWidth = _ref5.borderWidth,
+          button = _ref5.button,
+          offsetX = _ref5.offsetX,
+          offsetY = _ref5.offsetY,
+          target = _ref5.target;
+
+      if (button != 0) {
+        return;
+      }
+      var sin = Math.sin,
+          cos = Math.cos;
+      state.activeSprite.isActive = false;
+      state.activeSprite = state.sprites[index];
+      state.activeSprite.isActive = true;
+      state.showDragLayer = true;
+
+      /* save sprite's old state */
+      var _state$activeSprite = state.activeSprite,
+          x = _state$activeSprite.x,
+          y = _state$activeSprite.y,
+          width = _state$activeSprite.width,
+          height = _state$activeSprite.height;
+
+      state.activeSpriteOldState = { x: x, y: y, width: width, height: height };
+
+      if (/resize/.test(target.className)) {
+        // NOTE: resize
+        console.log("resize");
+        if (/left-top/.test(target.className)) {
+          state.activeSprite.mousedownX = state.activeSprite.x - 5 + offsetX;
+          state.activeSprite.mousedownY = state.activeSprite.y - 5 + offsetY;
+          state.activeSprite.dragDot = "left-top";
+        } else if (/right-top/.test(target.className)) {
+          state.activeSprite.mousedownX = state.activeSprite.x + state.activeSprite.width - 5 + offsetX;
+          state.activeSprite.mousedownY = state.activeSprite.y - 5 + offsetY;
+          state.activeSprite.dragDot = "right-top";
+        } else if (/right-bottom/.test(target.className)) {
+          state.activeSprite.mousedownX = state.activeSprite.x + state.activeSprite.width - 5 + offsetX;
+          state.activeSprite.mousedownY = state.activeSprite.y + state.activeSprite.height - 5 + offsetY;
+          state.activeSprite.dragDot = "right-bottom";
+        } else if (/left-bottom/.test(target.className)) {
+          state.activeSprite.mousedownX = state.activeSprite.x - 5 + offsetX;
+          state.activeSprite.mousedownY = state.activeSprite.y + state.activeSprite.height - 5 + offsetY;
+          state.activeSprite.dragDot = "left-bottom";
+        }
+        state.isResizingSprite = true;
+      } else if (/rotate/.test(target.className)) {
+        // NOTE: rotate
+        console.log("rotate");
+      } else if (/sprite-content/.test(target.className)) {
+        // NOTE: move
+        var angle = -state.activeSprite.rotateAngle;
+        var radians = angle / 180 * Math.PI;
+        var xr = state.activeSprite.x + state.activeSprite.width / 2;
+        var yr = state.activeSprite.y + state.activeSprite.height / 2;
+        var x0 = state.activeSprite.x + state.activeSprite.width / 2 - state.activeSprite.contentWidth / 2 + offsetX + borderWidth;
+        var y0 = state.activeSprite.y + state.activeSprite.height / 2 - state.activeSprite.contentHeight / 2 + offsetY + borderWidth;
+        var x1 = xr + (x0 - xr) * cos(radians) - (yr - y0) * sin(radians);
+        var y1 = yr - (x0 - xr) * sin(radians) - (yr - y0) * cos(radians);
+        state.activeSprite.mousedownX = x1;
+        state.activeSprite.mousedownY = y1;
+        // console.log("xr: ", xr, "yr: ", yr, "radians: ", radians)
+        // console.log("x0: ", x0, "y0: ", y0)
+        // console.log("mousedownX:", state.activeSprite.mousedownX, "mousedownY: ", state.activeSprite.mousedownY)
+        state.isMovingSprite = true;
+      }
+    },
+    spriteRotate: function spriteRotate(state, _ref6) {
+      var angle = _ref6.angle;
+
+      state.activeSprite.rotateAngle = angle;
+      var radians = void 0,
+          w = void 0,
+          h = void 0;
+      var sin = Math.sin,
+          cos = Math.cos;
+      if (angle >= 180) {
+        angle -= 180;
+      }
+      if (angle < 90) {
+        radians = angle / 180 * Math.PI;
+        w = state.activeSprite.contentWidth * cos(radians) + state.activeSprite.contentHeight * sin(radians);
+        h = state.activeSprite.contentWidth * sin(radians) + state.activeSprite.contentHeight * cos(radians);
+      } else {
+        radians = (angle - 90) / 180 * Math.PI;
+        w = state.activeSprite.contentHeight * cos(radians) + state.activeSprite.contentWidth * sin(radians);
+        h = state.activeSprite.contentHeight * sin(radians) + state.activeSprite.contentWidth * cos(radians);
+      }
+      state.activeSprite.x = state.activeSprite.x + state.activeSprite.width / 2 - w / 2;
+      state.activeSprite.y = state.activeSprite.y + state.activeSprite.height / 2 - h / 2;
+      state.activeSprite.width = w;
+      state.activeSprite.height = h;
+    }
+  },
+  actions: {}
+});
+
+exports.default = store;
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(35)
+__webpack_require__(36)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(9),
+  __webpack_require__(11),
   /* template */
-  __webpack_require__(29),
+  __webpack_require__(30),
   /* scopeId */
   "data-v-5e13cd6d",
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/BackgroundCover.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\BackgroundCover.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] BackgroundCover.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -9746,16 +10796,16 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(33)
+__webpack_require__(34)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(12),
+  __webpack_require__(14),
   /* template */
   null,
   /* scopeId */
@@ -9763,7 +10813,7 @@ var Component = __webpack_require__(1)(
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/ImageEditor.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\ImageEditor.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 
 /* hot reload */
@@ -9783,24 +10833,24 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(38)
+__webpack_require__(39)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(15),
+  __webpack_require__(17),
   /* template */
-  __webpack_require__(31),
+  __webpack_require__(32),
   /* scopeId */
   "data-v-957098a4",
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/SpriteSelectBox.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\SpriteSelectBox.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] SpriteSelectBox.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -9821,7 +10871,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9839,19 +10889,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 exports.default = {
   data: function data() {
-    return {
-      isShow: false
-    };
+    return {};
   },
-  created: function created() {
-    var _this = this;
-
-    _eventBus2.default.$on("spriteselected", function (sprte) {
-      _this.isShow = true;
-    });
-    _eventBus2.default.$on("spriteactionend", function () {
-      _this.isShow = false;
-    });
+  computed: {
+    isShow: function isShow() {
+      return this.$store.state.selectedSprite;
+    }
   }
 }; //
 //
@@ -9859,7 +10902,7 @@ exports.default = {
 //
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9895,7 +10938,7 @@ var CheckBox = {
 exports.default = CheckBox;
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9917,7 +10960,7 @@ var CircleSprite = {
 exports.default = CircleSprite;
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9927,17 +10970,17 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _data$components$rend;
-
 var _vue = __webpack_require__(3);
 
 var _vue2 = _interopRequireDefault(_vue);
+
+var _vuex = __webpack_require__(6);
 
 var _Sprite = __webpack_require__(5);
 
 var _Sprite2 = _interopRequireDefault(_Sprite);
 
-var _CircleSprite = __webpack_require__(26);
+var _CircleSprite = __webpack_require__(27);
 
 var _CircleSprite2 = _interopRequireDefault(_CircleSprite);
 
@@ -9947,24 +10990,7 @@ var _eventBus2 = _interopRequireDefault(_eventBus);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-exports.default = (_data$components$rend = {
-  data: function data() {
-    return {
-      isCreatingSprite: false, //is user dragging to create a sprite
-      isMovingSprite: false,
-      sampleImgUrl: "http://localhost:8089/imgs/bg-1.jpg",
-      isImgLoaded: false,
-      bgCanvasWidth: 300,
-      bgCanvasHeight: 300,
-      bgContext: null,
-      showDragLayer: false, //control the darglayer to show or hide
-      sprites: [],
-      activeSprite: null,
-      selectedSprite: null
-    };
-  },
+exports.default = {
   components: {
     "rect-sprite": _Sprite2.default,
     "circle-sprite": _CircleSprite2.default
@@ -10025,264 +11051,80 @@ exports.default = (_data$components$rend = {
         })]
       )]
     );
-  }
-}, _defineProperty(_data$components$rend, "data", function data() {
-  return {
-    isCreatingSprite: false, //is user dragging to create a sprite
-    isMovingSprite: false,
-    isResizingSprite: false,
-    sampleImgUrl: "http://localhost:8089/imgs/bg-2.jpg",
-    isImgLoaded: false,
-    bgCanvasWidth: 300,
-    bgCanvasHeight: 300,
-    bgContext: null,
-    showDragLayer: false, //control the darglayer to show or hide
-    sprites: [],
-    activeSprite: null,
-    activeSpriteOldState: null,
-    selectedSprite: null
-  };
-}), _defineProperty(_data$components$rend, "created", function created() {
-  var self = this;
-  var sampleImg = new Image();
-  sampleImg.src = this.sampleImgUrl;
-  sampleImg.onload = function () {
-    self.isImgLoaded = true;
-    self.bgCanvasWidth = this.width;
-    self.bgCanvasHeight = this.height;
-    self.$nextTick(function () {
-      self.bgContext = self.$refs.bgCanvas.getContext("2d");
-      self.drawBackground(sampleImg);
-    });
-  };
-
-  _eventBus2.default.$on("spriteselected", function (sprite) {
-    self.selectedSprite = sprite;
-    self.showDragLayer = true;
-    if (self.activeSprite) {
-      self.activeSprite.isActive = false;
-    }
-  });
-}), _defineProperty(_data$components$rend, "methods", {
-  mousedown: function mousedown(_ref) {
-    var offsetX = _ref.offsetX,
-        offsetY = _ref.offsetY,
-        button = _ref.button;
-
-    if (button != 0 || !this.showDragLayer || !this.selectedSprite) {
-      return;
-    }
-    this.isCreatingSprite = true;
-    var sprite = {
-      startX: offsetX,
-      startY: offsetY,
-      mousedownX: offsetX, // coordinate of mousedown when create|move|resize
-      mousedownY: offsetY, //
-      x: offsetX, // coordinate of sprite
-      y: offsetY,
-      centerX: offsetX,
-      centerY: offsetY,
-      width: 0,
-      height: 0,
-      contentWidth: 0,
-      contentHeight: 0,
-      rotateAngle: 0, // radius
-      isActive: true,
-      isMoving: false
+  },
+  computed: (0, _vuex.mapState)(['isCreatingSprite', 'isMovingSprite', 'isResizingSprite', 'showDragLayer', 'sprites', 'activeSprite', 'activeSpriteOldState', 'selectedSprite']),
+  data: function data() {
+    return {
+      sampleImgUrl: "http://localhost:8089/imgs/bg-2.jpg",
+      isImgLoaded: false,
+      bgCanvasWidth: 300,
+      bgCanvasHeight: 300,
+      bgContext: null
     };
-    sprite.name = this.selectedSprite;
-    this.sprites.push(sprite);
-    this.activeSprite = sprite;
   },
-  mousemove: function mousemove(_ref2) {
-    var offsetX = _ref2.offsetX,
-        offsetY = _ref2.offsetY,
-        button = _ref2.button,
-        target = _ref2.target;
+  created: function created() {
+    var self = this;
+    var sampleImg = new Image();
+    sampleImg.src = this.sampleImgUrl;
+    sampleImg.onload = function () {
+      self.isImgLoaded = true;
+      self.bgCanvasWidth = this.width;
+      self.bgCanvasHeight = this.height;
+      self.$nextTick(function () {
+        self.bgContext = self.$refs.bgCanvas.getContext("2d");
+        self.drawBackground(sampleImg);
+      });
+    };
+  },
+  methods: {
+    mousedown: function mousedown(_ref) {
+      var offsetX = _ref.offsetX,
+          offsetY = _ref.offsetY,
+          button = _ref.button;
 
-    if (button != 0 || !this.showDragLayer) {
-      return;
-    }
-    if (!this.activeSprite) {
-      console.warn("this.activeSprite is " + this.activeSprite);
-      return;
-    }
-    if (this.isCreatingSprite) {
-      this.activeSprite.x = Math.min(this.activeSprite.startX, offsetX);
-      this.activeSprite.y = Math.min(this.activeSprite.startY, offsetY);
-      this.activeSprite.width = Math.abs(this.activeSprite.startX - offsetX);
-      this.activeSprite.height = Math.abs(this.activeSprite.startY - offsetY);
-      this.activeSprite.contentWidth = this.activeSprite.width;
-      this.activeSprite.contentHeight = this.activeSprite.height;
-    } else if (this.isMovingSprite) {
-      this.activeSprite.x = this.activeSpriteOldState.x + (offsetX - this.activeSprite.mousedownX);
-      this.activeSprite.y = this.activeSpriteOldState.y + (offsetY - this.activeSprite.mousedownY);
-    } else if (this.isResizingSprite) {
-      var diffX = offsetX - this.activeSprite.mousedownX;
-      var diffY = offsetY - this.activeSprite.mousedownY;
-      switch (this.activeSprite.dragDot) {
-        case "left-top":
-          this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width);
-          this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height);
-          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX);
-          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY);
-          break;
-        case "right-top":
-          this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX);
-          this.activeSprite.y = Math.min(this.activeSpriteOldState.y + diffY, this.activeSpriteOldState.y + this.activeSpriteOldState.height);
-          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX);
-          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height - diffY);
-          break;
-        case "right-bottom":
-          this.activeSprite.x = Math.min(this.activeSpriteOldState.x, this.activeSpriteOldState.x + this.activeSpriteOldState.width + diffX);
-          this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY);
-          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width + diffX);
-          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
-          break;
-        case "left-bottom":
-          this.activeSprite.x = Math.min(this.activeSpriteOldState.x + diffX, this.activeSpriteOldState.x + this.activeSpriteOldState.width);
-          this.activeSprite.y = Math.min(this.activeSpriteOldState.y, this.activeSpriteOldState.y + this.activeSpriteOldState.height + diffY);
-          this.activeSprite.width = Math.abs(this.activeSpriteOldState.width - diffX);
-          this.activeSprite.height = Math.abs(this.activeSpriteOldState.height + diffY);
-          break;
-      }
-      var angle = this.activeSprite.rotateAngle;
-      var radians = void 0,
-          w = void 0,
-          h = void 0;
-      var sin = Math.sin,
-          cos = Math.cos;
-      if (angle >= 180) {
-        angle -= 180;
-      }
-      if (angle < 90) {
-        radians = angle / 180 * Math.PI;
-        w = (this.activeSprite.height * sin(radians) - this.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
-        h = (this.activeSprite.width * sin(radians) - this.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
-      } else {
-        radians = (angle - 90) / 180 * Math.PI;
-        w = (this.activeSprite.width * sin(radians) - this.activeSprite.height * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
-        h = (this.activeSprite.height * sin(radians) - this.activeSprite.width * cos(radians)) / (sin(radians) * sin(radians) - cos(radians) * cos(radians));
-      }
-      this.activeSprite.contentWidth = w;
-      this.activeSprite.contentHeight = h;
-    }
-    this.activeSprite.centerX = this.activeSprite.x + this.activeSprite.width / 2;
-    this.activeSprite.centerY = this.activeSprite.y + this.activeSprite.height / 2;
-  },
-  mouseup: function mouseup(_ref3) {
-    var offsetX = _ref3.offsetX,
-        offsetY = _ref3.offsetY,
-        button = _ref3.button;
+      this.$store.commit("canvasMousedown", { offsetX: offsetX, offsetY: offsetY, button: button });
+    },
+    mousemove: function mousemove(_ref2) {
+      var offsetX = _ref2.offsetX,
+          offsetY = _ref2.offsetY,
+          button = _ref2.button,
+          target = _ref2.target;
 
-    if (button != 0 || !this.showDragLayer) {
-      return;
-    }
-    this.isCreatingSprite = false;
-    this.isMovingSprite = false;
-    this.isResizingSprite = false;
-    this.showDragLayer = false;
-    _eventBus2.default.$emit("spriteactionend");
-  },
-  SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4, borderWidth) {
-    var button = _ref4.button,
-        offsetX = _ref4.offsetX,
-        offsetY = _ref4.offsetY,
-        target = _ref4.target;
+      this.$store.commit("dragLayerMousemove", { offsetX: offsetX, offsetY: offsetY, button: button, target: target });
+    },
+    mouseup: function mouseup(_ref3) {
+      var offsetX = _ref3.offsetX,
+          offsetY = _ref3.offsetY,
+          button = _ref3.button;
 
-    if (button != 0) {
-      return;
-    }
-    var sin = Math.sin,
-        cos = Math.cos;
-    this.activeSprite.isActive = false;
-    this.activeSprite = this.sprites[index];
-    this.activeSprite.isActive = true;
-    this.showDragLayer = true;
-    this.saveSpriteOldState();
-    if (/resize/.test(target.className)) {
-      // NOTE: resize
-      console.log("resize");
-      if (/left-top/.test(target.className)) {
-        this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
-        this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY;
-        this.activeSprite.dragDot = "left-top";
-      } else if (/right-top/.test(target.className)) {
-        this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX;
-        this.activeSprite.mousedownY = this.activeSprite.y - 5 + offsetY;
-        this.activeSprite.dragDot = "right-top";
-      } else if (/right-bottom/.test(target.className)) {
-        this.activeSprite.mousedownX = this.activeSprite.x + this.activeSprite.width - 5 + offsetX;
-        this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY;
-        this.activeSprite.dragDot = "right-bottom";
-      } else if (/left-bottom/.test(target.className)) {
-        this.activeSprite.mousedownX = this.activeSprite.x - 5 + offsetX;
-        this.activeSprite.mousedownY = this.activeSprite.y + this.activeSprite.height - 5 + offsetY;
-        this.activeSprite.dragDot = "left-bottom";
-      }
-      this.isResizingSprite = true;
-    } else if (/rotate/.test(target.className)) {
-      // NOTE: rotate
-      console.log("rotate");
-    } else if (/sprite-content/.test(target.className)) {
-      // NOTE: move
-      var angle = -this.activeSprite.rotateAngle;
-      var radians = angle / 180 * Math.PI;
-      var xr = this.activeSprite.x + this.activeSprite.width / 2;
-      var yr = this.activeSprite.y + this.activeSprite.height / 2;
-      var x0 = this.activeSprite.x + this.activeSprite.width / 2 - this.activeSprite.contentWidth / 2 + offsetX + borderWidth;
-      var y0 = this.activeSprite.y + this.activeSprite.height / 2 - this.activeSprite.contentHeight / 2 + offsetY + borderWidth;
-      var x1 = xr + (x0 - xr) * cos(radians) - (yr - y0) * sin(radians);
-      var y1 = yr - (x0 - xr) * sin(radians) - (yr - y0) * cos(radians);
-      this.activeSprite.mousedownX = x1;
-      this.activeSprite.mousedownY = y1;
-      // console.log("xr: ", xr, "yr: ", yr, "radians: ", radians)
-      // console.log("x0: ", x0, "y0: ", y0)
-      // console.log("mousedownX:", this.activeSprite.mousedownX, "mousedownY: ", this.activeSprite.mousedownY)
-      this.isMovingSprite = true;
-    }
-  },
-  spriteRotateHandler: function spriteRotateHandler(angle) {
-    this.activeSprite.rotateAngle = angle;
-    var radians = void 0,
-        w = void 0,
-        h = void 0;
-    var sin = Math.sin,
-        cos = Math.cos;
-    if (angle >= 180) {
-      angle -= 180;
-    }
-    if (angle < 90) {
-      radians = angle / 180 * Math.PI;
-      w = this.activeSprite.contentWidth * cos(radians) + this.activeSprite.contentHeight * sin(radians);
-      h = this.activeSprite.contentWidth * sin(radians) + this.activeSprite.contentHeight * cos(radians);
-    } else {
-      radians = (angle - 90) / 180 * Math.PI;
-      w = this.activeSprite.contentHeight * cos(radians) + this.activeSprite.contentWidth * sin(radians);
-      h = this.activeSprite.contentHeight * sin(radians) + this.activeSprite.contentWidth * cos(radians);
-    }
-    this.activeSprite.x = this.activeSprite.x + this.activeSprite.width / 2 - w / 2;
-    this.activeSprite.y = this.activeSprite.y + this.activeSprite.height / 2 - h / 2;
-    this.activeSprite.width = w;
-    this.activeSprite.height = h;
-  },
-  saveSpriteOldState: function saveSpriteOldState() {
-    var _activeSprite = this.activeSprite,
-        x = _activeSprite.x,
-        y = _activeSprite.y,
-        width = _activeSprite.width,
-        height = _activeSprite.height;
+      this.$store.commit("dragLayerMouseup", { offsetX: offsetX, offsetY: offsetY, button: button });
+    },
+    SpriteMouseDownHandler: function SpriteMouseDownHandler(index, _ref4, borderWidth) {
+      var button = _ref4.button,
+          offsetX = _ref4.offsetX,
+          offsetY = _ref4.offsetY,
+          target = _ref4.target;
 
-    this.activeSpriteOldState = { x: x, y: y, width: width, height: height };
-  },
-
-  drawBackground: function drawBackground(img) {
-    this.bgContext.drawImage(img, 0, 0);
+      this.$store.commit("spriteMousedown", {
+        index: index,
+        borderWidth: borderWidth,
+        button: button,
+        offsetX: offsetX,
+        offsetY: offsetY,
+        target: target
+      });
+    },
+    spriteRotateHandler: function spriteRotateHandler(angle) {
+      this.$store.commit("spriteRotate", { angle: angle });
+    },
+    drawBackground: function drawBackground(img) {
+      this.bgContext.drawImage(img, 0, 0);
+    }
   }
-}), _data$components$rend);
+};
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10292,7 +11134,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _SpriteOption = __webpack_require__(27);
+var _SpriteOption = __webpack_require__(28);
 
 var _SpriteOption2 = _interopRequireDefault(_SpriteOption);
 
@@ -10372,7 +11214,7 @@ var Sprite = {
 exports.default = Sprite;
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10382,7 +11224,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _CheckBox = __webpack_require__(25);
+var _CheckBox = __webpack_require__(26);
 
 var _CheckBox2 = _interopRequireDefault(_CheckBox);
 
@@ -10443,7 +11285,7 @@ var SpriteOption = {
 exports.default = SpriteOption;
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10461,14 +11303,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var SpriteSelectBox = {
   data: function data() {
-    return {
-      selectedSprite: null
-    };
+    return {};
   },
   methods: {
     selectSprite: function selectSprite(sprite) {
-      this.selectedSprite = sprite;
-      _eventBus2.default.$emit("spriteselected", this.selectedSprite);
+      this.$store.commit("spriteSelected", { sprite: sprite });
     }
   }
 }; //
@@ -10482,60 +11321,6 @@ var SpriteSelectBox = {
 exports.default = SpriteSelectBox;
 
 /***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _vue = __webpack_require__(3);
-
-var _vue2 = _interopRequireDefault(_vue);
-
-var _ImageEditor = __webpack_require__(7);
-
-var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
-
-var _SpriteSelectBox = __webpack_require__(8);
-
-var _SpriteSelectBox2 = _interopRequireDefault(_SpriteSelectBox);
-
-var _BackgroundCover = __webpack_require__(6);
-
-var _BackgroundCover2 = _interopRequireDefault(_BackgroundCover);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var app = new _vue2.default({
-  el: "#ie-container",
-  data: {},
-  components: {
-    "image-editor": _ImageEditor2.default,
-    "sprite-select-box": _SpriteSelectBox2.default,
-    "background-cover": _BackgroundCover2.default
-  }
-});
-// print rect
-// ctx.lineWidth = 10
-// ctx.lineCap = "butt | round | square"
-// ctx.lineJoin=  "round | bevel | miter"
-// let bgImg = document.querySelector("#bg-img")
-
-/***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(0)();
-// imports
-
-
-// module
-exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\n  position: relative;\n  display: inline-block;\n  z-index: 10;\n  overflow: hidden;\n}\n.bg-canvas[data-v-3dee5128] {\n  max-width: 800px;\n  min-width: 500px;\n  margin: 0 auto;\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  left: 0;\n  top: 0;\n  display: block;\n  z-index: 10;\n  background-color: rgba(248, 0, 0, 0.5);\n}\n", ""]);
-
-// exports
-
-
-/***/ }),
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10544,7 +11329,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.checkbox[data-v-57682a0f] {\n  display: inline-block;\n}\n.pic[data-v-57682a0f]{\n  width: 30px;\n  vertical-align: middle;\n}\n", ""]);
+exports.push([module.i, "\n.canvas-section[data-v-3dee5128] {\r\n  font-size: 0;\n}\n.bg-canvas-wrapper[data-v-3dee5128] {\r\n  position: relative;\r\n  display: inline-block;\r\n  z-index: 10;\r\n  overflow: hidden;\n}\n.bg-canvas[data-v-3dee5128] {\r\n  max-width: 800px;\r\n  min-width: 500px;\r\n  margin: 0 auto;\r\n  border: 1px solid black;\n}\n.drag-layer[data-v-3dee5128] {\r\n  position: absolute;\r\n  width: 100%;\r\n  height: 100%;\r\n  left: 0;\r\n  top: 0;\r\n  display: block;\r\n  z-index: 10;\r\n  background-color: rgba(248, 0, 0, 0.5);\n}\r\n", ""]);
 
 // exports
 
@@ -10558,7 +11343,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.background-cover[data-v-5e13cd6d] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: block;\n}\n.background-cover.hide[data-v-5e13cd6d] {\n  display: none;\n}\n", ""]);
+exports.push([module.i, "\n.checkbox[data-v-57682a0f] {\r\n  display: inline-block;\n}\n.pic[data-v-57682a0f]{\r\n  width: 30px;\r\n  vertical-align: middle;\n}\r\n", ""]);
 
 // exports
 
@@ -10572,7 +11357,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite-option[data-v-625f0ef4] {\n  position: absolute;\n  top: -80px;\n  left: 50%;\n  transform: translateX(-50%);\n  width: 300px;\n  line-height: 30px;\n  background-color: white;\n  border: 1px solid #222;\n  border-radius: 4px;\n  font-size: 14px;\n}\n.option[data-v-625f0ef4] {\n  display: inline;\n}\n.option label[data-v-625f0ef4] {\n  vertical-align: middle;\n}\n", ""]);
+exports.push([module.i, "\n.background-cover[data-v-5e13cd6d] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: block;\n}\n.background-cover.hide[data-v-5e13cd6d] {\n  display: none;\n}\n", ""]);
 
 // exports
 
@@ -10586,7 +11371,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.circle-sprite .sprite-content[data-v-75803321] {\n  border-radius: 50%;\n}\n", ""]);
+exports.push([module.i, "\n.sprite-option[data-v-625f0ef4] {\r\n  position: absolute;\r\n  top: -80px;\r\n  left: 50%;\r\n  transform: translateX(-50%);\r\n  width: 300px;\r\n  line-height: 30px;\r\n  background-color: white;\r\n  border: 1px solid #222;\r\n  border-radius: 4px;\r\n  font-size: 14px;\n}\n.option[data-v-625f0ef4] {\r\n  display: inline;\n}\n.option label[data-v-625f0ef4] {\r\n  vertical-align: middle;\n}\r\n", ""]);
 
 // exports
 
@@ -10600,7 +11385,7 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\n  position: relative;\n  z-index: 5;\n}\n", ""]);
+exports.push([module.i, "\n.circle-sprite .sprite-content[data-v-75803321] {\r\n  border-radius: 50%;\n}\r\n", ""]);
 
 // exports
 
@@ -10614,13 +11399,27 @@ exports = module.exports = __webpack_require__(0)();
 
 
 // module
-exports.push([module.i, "\n.sprite {\n  position: absolute;\n  z-index: 5;\n  border: 1px solid lightblue;\n}\n.sprite-content {\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  background-color: rgba(248, 248, 77, 0.5);\n  font-size: 14px;\n  box-sizing: border-box;\n  z-index: 10;\n  overflow: hidden;\n}\n/*.sprite.active .sprite-content {\n  border: 10px solid lightblue;\n}*/\n.sprite-content.unfill {\n  background-color: transparent !important;\n}\n/*.drag-bar {\n\n}*/\n.dragable-wrapper {\n  width: 100%;\n  height: 100%;\n  position: absolute;\n  z-index: 5;\n  top: 0;\n  left: 0;\n}\n.dragable {\n  display: none;\n}\n.sprite.active .dragable {\n  display: block;\n}\n/*.dragable.rotate {\n  width: 20px;\n  height: 20px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n  left: 50%;\n  margin-left: -10px;\n  bottom: -40px;\n}*/\n.drag-dot {\n  width: 10px;\n  height: 10px;\n  background-color: lightblue;\n  position: absolute;\n  border-radius: 50%;\n}\n.drag-dot.left-top {\n  left: -5px;\n  top: -5px;\n}\n.drag-dot.left-bottom {\n  left: -5px;\n  bottom: -5px;\n}\n.drag-dot.right-top {\n  right: -5px;\n  top: -5px;\n}\n.drag-dot.right-bottom {\n  right: -5px;\n  bottom: -5px;\n}\n.center {\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  margin-left: -3px;\n  margin-top: -3px;\n  left: 50%;\n  top: 50%;\n  border-radius: 50%;\n  background-color: red;\n}\n", ""]);
+exports.push([module.i, "\n.sprite-select-box[data-v-957098a4] {\r\n  position: relative;\r\n  z-index: 5;\n}\r\n", ""]);
 
 // exports
 
 
 /***/ }),
 /* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.sprite {\r\n  position: absolute;\r\n  z-index: 5;\r\n  border: 1px solid lightblue;\n}\n.sprite-content {\r\n  position: absolute;\r\n  left: 50%;\r\n  top: 50%;\r\n  background-color: rgba(248, 248, 77, 0.5);\r\n  font-size: 14px;\r\n  box-sizing: border-box;\r\n  z-index: 10;\r\n  overflow: hidden;\n}\r\n/*.sprite.active .sprite-content {\r\n  border: 10px solid lightblue;\r\n}*/\n.sprite-content.unfill {\r\n  background-color: transparent !important;\n}\r\n/*.drag-bar {\r\n\r\n}*/\n.dragable-wrapper {\r\n  width: 100%;\r\n  height: 100%;\r\n  position: absolute;\r\n  z-index: 5;\r\n  top: 0;\r\n  left: 0;\n}\n.dragable {\r\n  display: none;\n}\n.sprite.active .dragable {\r\n  display: block;\n}\r\n/*.dragable.rotate {\r\n  width: 20px;\r\n  height: 20px;\r\n  background-color: lightblue;\r\n  position: absolute;\r\n  border-radius: 50%;\r\n  left: 50%;\r\n  margin-left: -10px;\r\n  bottom: -40px;\r\n}*/\n.drag-dot {\r\n  width: 10px;\r\n  height: 10px;\r\n  background-color: lightblue;\r\n  position: absolute;\r\n  border-radius: 50%;\n}\n.drag-dot.left-top {\r\n  left: -5px;\r\n  top: -5px;\n}\n.drag-dot.left-bottom {\r\n  left: -5px;\r\n  bottom: -5px;\n}\n.drag-dot.right-top {\r\n  right: -5px;\r\n  top: -5px;\n}\n.drag-dot.right-bottom {\r\n  right: -5px;\r\n  bottom: -5px;\n}\n.center {\r\n  position: absolute;\r\n  width: 6px;\r\n  height: 6px;\r\n  margin-left: -3px;\r\n  margin-top: -3px;\r\n  left: 50%;\r\n  top: 50%;\r\n  border-radius: 50%;\r\n  background-color: red;\n}\r\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 25 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -10806,24 +11605,24 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(34)
+__webpack_require__(35)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(10),
+  __webpack_require__(12),
   /* template */
-  __webpack_require__(28),
+  __webpack_require__(29),
   /* scopeId */
   "data-v-57682a0f",
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/CheckBox.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\CheckBox.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] CheckBox.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -10844,16 +11643,16 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(37)
+__webpack_require__(38)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(11),
+  __webpack_require__(13),
   /* template */
   null,
   /* scopeId */
@@ -10861,7 +11660,7 @@ var Component = __webpack_require__(1)(
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/CircleSprite.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\CircleSprite.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 
 /* hot reload */
@@ -10881,24 +11680,24 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(36)
+__webpack_require__(37)
 
 var Component = __webpack_require__(1)(
   /* script */
-  __webpack_require__(14),
+  __webpack_require__(16),
   /* template */
-  __webpack_require__(30),
+  __webpack_require__(31),
   /* scopeId */
   "data-v-625f0ef4",
   /* cssModules */
   null
 )
-Component.options.__file = "/home/totti/workspace/image-editor/src/components/SpriteOption.vue"
+Component.options.__file = "E:\\git\\image-editor\\src\\components\\SpriteOption.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] SpriteOption.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -10919,7 +11718,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10961,7 +11760,7 @@ if (false) {
 }
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10981,7 +11780,7 @@ if (false) {
 }
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -11042,7 +11841,7 @@ if (false) {
 }
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -11075,7 +11874,7 @@ if (false) {
 }
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -11153,13 +11952,13 @@ if (false) {
 }
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(17);
+var content = __webpack_require__(18);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11179,13 +11978,13 @@ if(false) {
 }
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(18);
+var content = __webpack_require__(19);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11205,13 +12004,13 @@ if(false) {
 }
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(19);
+var content = __webpack_require__(20);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11231,13 +12030,13 @@ if(false) {
 }
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(20);
+var content = __webpack_require__(21);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11257,13 +12056,13 @@ if(false) {
 }
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(21);
+var content = __webpack_require__(22);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11283,13 +12082,13 @@ if(false) {
 }
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(22);
+var content = __webpack_require__(23);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11309,13 +12108,13 @@ if(false) {
 }
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(23);
+var content = __webpack_require__(24);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -11335,7 +12134,7 @@ if(false) {
 }
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports) {
 
 /**
@@ -11368,7 +12167,7 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports) {
 
 var g;
@@ -11393,6 +12192,51 @@ try {
 
 module.exports = g;
 
+
+/***/ }),
+/* 43 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _vue = __webpack_require__(3);
+
+var _vue2 = _interopRequireDefault(_vue);
+
+var _index = __webpack_require__(7);
+
+var _index2 = _interopRequireDefault(_index);
+
+var _ImageEditor = __webpack_require__(9);
+
+var _ImageEditor2 = _interopRequireDefault(_ImageEditor);
+
+var _SpriteSelectBox = __webpack_require__(10);
+
+var _SpriteSelectBox2 = _interopRequireDefault(_SpriteSelectBox);
+
+var _BackgroundCover = __webpack_require__(8);
+
+var _BackgroundCover2 = _interopRequireDefault(_BackgroundCover);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var app = new _vue2.default({
+  el: "#ie-container",
+  data: {},
+  store: _index2.default,
+  components: {
+    "image-editor": _ImageEditor2.default,
+    "sprite-select-box": _SpriteSelectBox2.default,
+    "background-cover": _BackgroundCover2.default
+  }
+});
+// print rect
+// ctx.lineWidth = 10
+// ctx.lineCap = "butt | round | square"
+// ctx.lineJoin=  "round | bevel | miter"
+// let bgImg = document.querySelector("#bg-img")
 
 /***/ })
 /******/ ]);

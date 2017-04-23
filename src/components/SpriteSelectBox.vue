@@ -10,14 +10,11 @@ import eventBus from "../base/eventBus"
 
 let SpriteSelectBox = {
   data: function() {
-    return {
-      selectedSprite: null
-    }
+    return {}
   },
   methods: {
     selectSprite: function(sprite) {
-      this.selectedSprite = sprite
-      eventBus.$emit("spriteselected", this.selectedSprite)
+      this.$store.commit("spriteSelected", {sprite})
     }
   }
 }

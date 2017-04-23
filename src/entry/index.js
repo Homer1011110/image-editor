@@ -1,4 +1,7 @@
 import Vue from "vue"
+
+import store from "../store/index"
+
 import ImageEditor from "../components/ImageEditor.vue"
 import SpriteSelectBox from "../components/SpriteSelectBox.vue"
 import BackgroundCover from "../components/BackgroundCover.vue"
@@ -6,6 +9,7 @@ import BackgroundCover from "../components/BackgroundCover.vue"
 let app = new Vue({
   el: "#ie-container",
   data: {},
+  store: store,
   components: {
     "image-editor": ImageEditor,
     "sprite-select-box": SpriteSelectBox,

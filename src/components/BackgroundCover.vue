@@ -7,17 +7,12 @@ import eventBus from "../base/eventBus"
 
 export default {
   data: function() {
-    return {
-      isShow: false
-    }
+    return {}
   },
-  created: function() {
-    eventBus.$on("spriteselected", (sprte)=> {
-      this.isShow = true
-    })
-    eventBus.$on("spriteactionend", ()=> {
-      this.isShow = false
-    })
+  computed: {
+    isShow: function() {
+      return this.$store.state.selectedSprite
+    }
   }
 }
 </script>
