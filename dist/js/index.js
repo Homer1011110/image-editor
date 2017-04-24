@@ -10505,8 +10505,20 @@ var _vuex2 = _interopRequireDefault(_vuex);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// console.log("store")
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } } // console.log("store")
+
+
 _vue2.default.use(_vuex2.default);
+
+var SpriteModel = function SpriteModel(name, offsetX, offsetY) {
+  _classCallCheck(this, SpriteModel);
+
+  this.startX = offsetX, this.startY = offsetY, this.mousedownX = offsetX, // coordinate of mousedown when create|move|resize
+  this.mousedownY = offsetY, //
+  this.x = offsetX, // coordinate of sprite
+  this.y = offsetY, this.centerX = offsetX, this.centerY = offsetY, this.width = 0, this.height = 0, this.contentWidth = 0, this.contentHeight = 0, this.rotateAngle = 0, // radius
+  this.isActive = true, this.isMoving = false, this.name = name;
+};
 
 var store = new _vuex2.default.Store({
   state: {
@@ -10545,24 +10557,7 @@ var store = new _vuex2.default.Store({
         return;
       }
       state.isCreatingSprite = true;
-      var sprite = {
-        startX: offsetX,
-        startY: offsetY,
-        mousedownX: offsetX, // coordinate of mousedown when create|move|resize
-        mousedownY: offsetY, //
-        x: offsetX, // coordinate of sprite
-        y: offsetY,
-        centerX: offsetX,
-        centerY: offsetY,
-        width: 0,
-        height: 0,
-        contentWidth: 0,
-        contentHeight: 0,
-        rotateAngle: 0, // radius
-        isActive: true,
-        isMoving: false
-      };
-      sprite.name = state.selectedSprite;
+      var sprite = new SpriteModel(state.selectedSprite, offsetX, offsetY);
       state.sprites.push(sprite);
       state.activeSprite = sprite;
     },

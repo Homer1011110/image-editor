@@ -3,6 +3,27 @@ import Vue from "vue"
 import Vuex from "vuex"
 Vue.use(Vuex)
 
+class SpriteModel {
+  constructor(name, offsetX, offsetY) {
+    this.startX = offsetX,
+    this.startY = offsetY,
+    this.mousedownX = offsetX,// coordinate of mousedown when create|move|resize
+    this.mousedownY = offsetY,//
+    this.x = offsetX,// coordinate of sprite
+    this.y = offsetY,
+    this.centerX = offsetX,
+    this.centerY = offsetY,
+    this.width = 0,
+    this.height = 0,
+    this.contentWidth = 0,
+    this.contentHeight = 0,
+    this.rotateAngle = 0, // radius
+    this.isActive = true,
+    this.isMoving = false,
+    this.name = name
+  }
+}
+
 let store = new Vuex.Store({
   state: {
     // NOTE: ImageEditor State
@@ -34,24 +55,7 @@ let store = new Vuex.Store({
         return
       }
       state.isCreatingSprite = true
-      let sprite = {
-        startX: offsetX,
-        startY: offsetY,
-        mousedownX: offsetX,// coordinate of mousedown when create|move|resize
-        mousedownY: offsetY,//
-        x: offsetX,// coordinate of sprite
-        y: offsetY,
-        centerX: offsetX,
-        centerY: offsetY,
-        width: 0,
-        height: 0,
-        contentWidth: 0,
-        contentHeight: 0,
-        rotateAngle: 0, // radius
-        isActive: true,
-        isMoving: false
-      }
-      sprite.name = state.selectedSprite
+      let sprite = new SpriteModel(state.selectedSprite, offsetX, offsetY)
       state.sprites.push(sprite)
       state.activeSprite = sprite
     },
